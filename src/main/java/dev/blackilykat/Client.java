@@ -27,16 +27,16 @@ import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 import dev.blackilykat.messages.exceptions.MessageMissingContentsException;
 
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {
-    public final Socket socket;
+    public final SSLSocket socket;
     public InputStream inputStream;
     public OutputStream outputStream;
     public boolean connected = true;
@@ -47,12 +47,13 @@ public class Client {
     private int messageIdCounter = 0;
     public final int clientId;
 
-    public Client(Socket socket, int clientId) throws IOException {
+    public Client(SSLSocket socket, int clientId) throws IOException {
         this.clientId = clientId;
         this.socket = socket;
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
         Main.clients.add(this);
+        socket.startHandshake();
     }
 
     public void start() {

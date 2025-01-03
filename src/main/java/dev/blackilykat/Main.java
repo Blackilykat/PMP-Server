@@ -20,15 +20,38 @@
 
 package dev.blackilykat;
 
-import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import dev.blackilykat.messages.LibraryHashesMessage;
 import dev.blackilykat.messages.TestMessage;
 import dev.blackilykat.messages.WelcomeMessage;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.cert.X509v1CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class Main {
     public static ArrayList<Client> clients = new ArrayList<>();
@@ -38,17 +61,61 @@ public class Main {
         System.out.println("Initializing database...");
         Storage.init();
         System.out.println("Initialized database");
+
+        System.out.println("Preparing SSL...");
+        SSLContext sslContext;
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            char[] keyPassword = "key".toCharArray();
+            File keyStoreFile = new File("keystore.jks");
+            KeyStore keyStore = KeyStore.getInstance("BCFKS", "BC");
+            if(!keyStoreFile.exists()) {
+                // https://github.com/rodbate/bouncycastle-examples/blob/master/src/main/java/bcfipsin100/tls/Simple.java
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+                keyPairGenerator.initialize(2048);
+                KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+                X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(
+                        new X500Name("CN=PMP Server"),
+                        BigInteger.valueOf(System.currentTimeMillis()),
+                        new Date(System.currentTimeMillis() - 5000L),
+                        new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365 * 2000), // expires in 2000 years (basically never)
+                        new X500Name("CN=PMP Server"),
+                        keyPair.getPublic()
+                );
+                JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA384withRSA").setProvider("BC");
+                X509Certificate certificate = new JcaX509CertificateConverter().setProvider("BC").getCertificate(builder.build(signerBuilder.build(keyPair.getPrivate())));
+
+                keyStore.load(null, null);
+                keyStore.setKeyEntry("Key", keyPair.getPrivate(), keyPassword, new X509Certificate[]{certificate});
+                keyStore.store(new FileOutputStream(keyStoreFile), null);
+            } else {
+                keyStore.load(new FileInputStream(keyStoreFile), null);
+            }
+
+            KeyManagerFactory factory = KeyManagerFactory.getInstance("SunX509");
+            factory.init(keyStore, keyPassword);
+
+            sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(factory.getKeyManagers(), null, SecureRandom.getInstance("DEFAULT", "BC"));
+        } catch(OperatorCreationException | GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Prepared SSL");
+
         System.out.println("Starting file transfer server...");
-        HttpServer fileTransferHttpServer = HttpServer.create(new InetSocketAddress(5001), 0);
+        HttpsServer fileTransferHttpServer = HttpsServer.create(new InetSocketAddress(5001), 0);
+        fileTransferHttpServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
         fileTransferHttpServer.createContext("/", new FileTransferHttpHandler());
         fileTransferHttpServer.start();
         System.out.println("Started file transfer server");
 
         System.out.println("Starting main server");
-        ServerSocket serverSocket = new ServerSocket(5000);
+
+        SSLServerSocket serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(5000);
 
         while(true) {
-            Client client = new Client(serverSocket.accept(), clientIdCounter++);
+            Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
             client.start();
             client.send(new WelcomeMessage(client.clientId, Storage.getCurrentActionID()));
             System.out.println("Connected to client " + client);
