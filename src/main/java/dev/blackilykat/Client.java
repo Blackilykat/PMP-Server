@@ -174,6 +174,8 @@ public class Client {
                                 case LibraryActionMessage.MESSAGE_TYPE -> LibraryActionMessage.fromJson(json);
                                 case TestMessage.MESSAGE_TYPE -> TestMessage.fromJson(json);
                                 case LibraryActionRequestMessage.MESSAGE_TYPE -> LibraryActionRequestMessage.fromJson(json);
+                                case PlaybackSessionCreateMessage.MESSAGE_TYPE -> PlaybackSessionCreateMessage.fromJson(json);
+                                case PlaybackSessionUpdateMessage.MESSAGE_TYPE -> PlaybackSessionUpdateMessage.fromJson(json);
                                 default -> {
                                     throw new MessageInvalidContentsException("Unknown message_type '"+messageType+"'");
                                 }

@@ -23,6 +23,8 @@ package dev.blackilykat;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
 import dev.blackilykat.messages.LibraryHashesMessage;
+import dev.blackilykat.messages.PlaybackSessionCreateMessage;
+import dev.blackilykat.messages.PlaybackSessionUpdateMessage;
 import dev.blackilykat.messages.TestMessage;
 import dev.blackilykat.messages.WelcomeMessage;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -122,6 +124,10 @@ public class Main {
             System.out.println("All connected clients: " + clients.toString());
             Client.broadcast(new TestMessage(client.clientId));
             client.send(LibraryHashesMessage.create());
+            for(PlaybackSession session : PlaybackSession.getAvailableSessions()) {
+                client.send(new PlaybackSessionCreateMessage(null, session.id));
+                client.send(new PlaybackSessionUpdateMessage(session.id, session.track, session.shuffle, session.repeat, session.playing, session.lastPositionUpdate, session.owner, session.lastPositionUpdateTime));
+            }
         }
     }
 }
