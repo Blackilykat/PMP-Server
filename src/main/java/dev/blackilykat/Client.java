@@ -133,8 +133,9 @@ public class Client {
                                 err.secondsToRetry,
                                 err.info);
                     }
-                    outputStream.write((message.withMessageId(getMessageIdCounter()).toJson() + "\n")
-                            .getBytes(StandardCharsets.UTF_8));
+                    String messageStr = (message.withMessageId(getMessageIdCounter()).toJson() + "\n");
+                    System.out.printf("Sending message to client %d: %s\n", clientId, messageStr);
+                    outputStream.write(messageStr.getBytes(StandardCharsets.UTF_8));
                     increaseMessageIdCounter();
                 }
             } catch (IOException e) {
@@ -158,6 +159,7 @@ public class Client {
                         inputBuffer.append((char) read);
                     } else if(!inputBuffer.isEmpty()) {
                         String message = inputBuffer.toString();
+                        System.out.printf("Received from client %d: %s\n", clientId, message);
                         try {
                             JsonObject json = Json.fromJsonObject(message);
                             String messageType;

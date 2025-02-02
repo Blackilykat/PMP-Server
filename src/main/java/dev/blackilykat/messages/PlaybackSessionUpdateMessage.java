@@ -123,7 +123,6 @@ public class PlaybackSessionUpdateMessage extends Message {
 
     //@Override
     public static PlaybackSessionUpdateMessage fromJson(JsonObject json) throws MessageException {
-        System.out.println(json.toString());
         return new PlaybackSessionUpdateMessage(
                 json.get("sessionId").getAsInt(),
                 json.has("track") ? json.get("track").getAsString() : null,
