@@ -118,7 +118,7 @@ public class Main {
 
         while(true) {
             Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
-            client.start();
+            client.startSending();
             client.send(new WelcomeMessage(client.clientId, Storage.getCurrentActionID()));
             System.out.println("Connected to client " + client);
             System.out.println("All connected clients: " + clients.toString());
@@ -128,6 +128,7 @@ public class Main {
                 client.send(new PlaybackSessionCreateMessage(null, session.id));
                 client.send(new PlaybackSessionUpdateMessage(session.id, session.track, session.shuffle, session.repeat, session.playing, session.lastPositionUpdate, session.owner, session.lastPositionUpdateTime));
             }
+            client.startReceiving();
         }
     }
 }

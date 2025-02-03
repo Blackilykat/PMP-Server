@@ -42,8 +42,8 @@ public class Client {
     public boolean connected = true;
     public BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
     public StringBuffer inputBuffer = new StringBuffer();
-    public MessageSendingThread messageSendingThread = new MessageSendingThread();
-    public InputReadingThread inputReadingThread = new InputReadingThread();
+    private MessageSendingThread messageSendingThread = new MessageSendingThread();
+    private MessageReceivingThread messageReceivingThread = new MessageReceivingThread();
     private int messageIdCounter = 0;
     public final int clientId;
 
@@ -58,7 +58,22 @@ public class Client {
 
     public void start() {
         messageSendingThread.start();
-        inputReadingThread.start();
+        messageReceivingThread.start();
+    }
+
+    public void startSending() {
+        if(messageSendingThread.isAlive()) {
+            throw new IllegalStateException("Already started");
+        }
+        messageSendingThread.start();
+    }
+
+
+    public void startReceiving() {
+        if(messageReceivingThread.isAlive()) {
+            throw new IllegalStateException("Already started");
+        }
+        messageReceivingThread.start();
     }
 
     public void disconnect() {
@@ -147,7 +162,7 @@ public class Client {
         }
     }
 
-    private class InputReadingThread extends Thread {
+    private class MessageReceivingThread extends Thread {
         @Override
         public void run() {
             try {
