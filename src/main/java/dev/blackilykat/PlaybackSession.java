@@ -48,6 +48,16 @@ public class PlaybackSession {
         return availableSessions.toArray(new PlaybackSession[0]);
     }
 
+    public void recalculatePosition(Instant atTime) {
+        int offset = 0;
+        if(playing && lastPositionUpdateTime != null) {
+            offset = (int) (((atTime.toEpochMilli() - lastPositionUpdateTime.toEpochMilli()) * 44100 * 4) / 1000);
+        }
+        offset -= offset % 4;
+        lastPositionUpdate += offset;
+        lastPositionUpdateTime = atTime;
+    }
+
     public enum ShuffleOption {
         ON,
         OFF

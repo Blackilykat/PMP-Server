@@ -110,10 +110,16 @@ public class PlaybackSessionUpdateMessage extends Message {
             if(track != null) session.track = track;
             if(shuffle != null) session.shuffle = shuffle;
             if(repeat != null) session.repeat = repeat;
-            if(playing != null) session.playing = playing;
+            if(playing != null) {
+                session.recalculatePosition(time != null ? time : Instant.now());
+                session.playing = playing;
+            }
             if(position != null) session.lastPositionUpdate = position;
-            if(time != null) session.lastPositionUpdateTime = time;
-            else session.lastPositionUpdateTime = Instant.now();
+            if(time != null) {
+                session.lastPositionUpdateTime = time;
+            } else {
+                session.lastPositionUpdateTime = Instant.now();
+            }
             if(owner != null) session.owner = owner;
 
             break;
