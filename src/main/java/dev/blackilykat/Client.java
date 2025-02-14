@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -84,6 +85,16 @@ public class Client {
         try {
             socket.close();
         } catch (IOException ignored) {}
+
+        for(PlaybackSession session : PlaybackSession.getAvailableSessions()) {
+            if(session.owner == this.clientId) {
+                session.owner = -1;
+                Instant now = Instant.now();
+                session.recalculatePosition(now);
+                session.playing = false;
+                Client.broadcast(new PlaybackSessionUpdateMessage(session.id, null, null, null, false, session.lastPositionUpdate, -1, session.lastPositionUpdateTime));
+            }
+        }
     }
 
     public void send(Message message) {
