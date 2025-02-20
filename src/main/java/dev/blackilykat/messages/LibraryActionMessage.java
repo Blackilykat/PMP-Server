@@ -24,11 +24,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.blackilykat.Client;
 import dev.blackilykat.Json;
+import dev.blackilykat.LibraryAction;
 import dev.blackilykat.Storage;
 import dev.blackilykat.messages.exceptions.MessageException;
 
 import java.io.File;
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +47,12 @@ public class LibraryActionMessage extends Message {
      */
     public static PendingAction pendingAction = new PendingAction();
     public int actionId;
-    public Type actionType;
+    public LibraryAction.Type actionType;
     public String fileName;
     public List<Pair<String, String>> newMetadata;
 
-    public LibraryActionMessage(Type type, int actionId, String fileName) {
-        if(type == Type.CHANGE_METADATA) {
+    public LibraryActionMessage(LibraryAction.Type type, int actionId, String fileName) {
+        if(type == LibraryAction.Type.CHANGE_METADATA) {
             throw new IllegalArgumentException("Incorrect initializer: expected List<Pair<String, String>> as fourth argument for action type " + type);
         }
         this.actionType = type;
@@ -60,8 +60,8 @@ public class LibraryActionMessage extends Message {
         this.fileName = fileName;
     }
 
-    public LibraryActionMessage(Type type, int actionId, String fileName, List<Pair<String, String>> newMetadata) {
-        if(type != Type.CHANGE_METADATA) {
+    public LibraryActionMessage(LibraryAction.Type type, int actionId, String fileName, List<Pair<String, String>> newMetadata) {
+        if(type != LibraryAction.Type.CHANGE_METADATA) {
             throw new IllegalArgumentException("Incorrect initializer: expected only three arguments for action type " + type);
         }
         this.actionType = type;
@@ -80,15 +80,15 @@ public class LibraryActionMessage extends Message {
         object.addProperty("action_type", actionType.toString());
         object.addProperty("action_id", actionId);
         object.addProperty("file_name", fileName);
-        if(actionType == Type.CHANGE_METADATA) {
+        if(actionType == LibraryAction.Type.CHANGE_METADATA) {
             object.add("new_metadata", Json.GSON.toJsonTree(newMetadata));
         }
     }
 
     //@Override
     public static LibraryActionMessage fromJson(JsonObject json) throws MessageException {
-        Type type = Type.valueOf(json.get("action_type").getAsString());
-        if(type == Type.CHANGE_METADATA) {
+        LibraryAction.Type type = LibraryAction.Type.valueOf(json.get("action_type").getAsString());
+        if(type == LibraryAction.Type.CHANGE_METADATA) {
             List<Pair<String, String>> metadata = new ArrayList<>();
             for (JsonElement metadataEntry : json.get("new_metadata").getAsJsonArray()) {
                 metadata.add(new Pair<>(metadataEntry.getAsJsonObject().get("key").getAsString(),
@@ -115,7 +115,7 @@ public class LibraryActionMessage extends Message {
             return;
         }
         System.out.printf("Received action %d: %s\n", actionId, actionType);
-        if(actionType == Type.ADD || actionType == Type.REPLACE) {
+        if(actionType == LibraryAction.Type.ADD || actionType == LibraryAction.Type.REPLACE) {
             if (pendingAction == null || pendingAction.isCancelled() || pendingAction.finished) {
                 pendingAction = new PendingAction(actionId, client.clientId, fileName, actionType);
             } else {
@@ -136,13 +136,13 @@ public class LibraryActionMessage extends Message {
                 }
                 client.send(errorMessage);
             }
-        } else if(actionType == Type.CHANGE_METADATA) {
+        } else if(actionType == LibraryAction.Type.CHANGE_METADATA) {
             //TODO before beta
             ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS);
             errorMessage.relativeToMessage = messageId;
             errorMessage.info = "The server does not support changing metadata yet! :(";
             client.send(errorMessage);
-        } else if(actionType == Type.REMOVE) {
+        } else if(actionType == LibraryAction.Type.REMOVE) {
             File toRemove = new File(Storage.LIBRARY, fileName);
             if(!toRemove.delete()) {
                 ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS);
@@ -153,34 +153,14 @@ public class LibraryActionMessage extends Message {
             }
             Client.broadcastExcept(this, client.clientId);
         }
-        Action action = new Action(actionId, client.clientId, fileName, actionType);
-        if(actionType == Type.CHANGE_METADATA) {
+        LibraryAction action = new LibraryAction(actionId, client.clientId, fileName, actionType);
+        if(actionType == LibraryAction.Type.CHANGE_METADATA) {
             action.newMetadata = newMetadata;
         }
         Storage.actions.put(currentActionId, action);
         Storage.setCurrentActionID(currentActionId + 1);
     }
 
-    public enum Type {
-        /**
-         * Add a new song to the library
-         */
-        ADD,
-        /**
-         * Remove a song from the library
-         */
-        REMOVE,
-        /**
-         * Replace the file of a song with another one (would be the same song, this action would only happen if like
-         * someone changes the source, say, to get a higher quality version. This action exists so that when the
-         * playback eventually gets tracked the counts don't get split or interrupted due to a file replacement)
-         */
-        REPLACE,
-        /**
-         * Change the metadata of a song while keeping the audio data untouched
-         */
-        CHANGE_METADATA
-    }
 
     public static class Pair<T, U> {
         public T key;
@@ -192,7 +172,7 @@ public class LibraryActionMessage extends Message {
         }
     }
 
-    public static class PendingAction extends Action {
+    public static class PendingAction extends LibraryAction {
         /**
          * The time in seconds that the client has to establish a connection to the http server to upload the file
          */
@@ -217,7 +197,7 @@ public class LibraryActionMessage extends Message {
          */
         public boolean cancelled = false;
 
-        public PendingAction(int actionId, int clientId, String fileName, Type actionType) {
+        public PendingAction(int actionId, int clientId, String fileName, LibraryAction.Type actionType) {
             super(actionId, clientId, fileName, actionType);
             this.creationTime = Instant.now();
         }
@@ -243,60 +223,10 @@ public class LibraryActionMessage extends Message {
         }
     }
 
-    //TODO maybe move??? i dont really know this might be getting a bit too big for a message class and unintuitive
-    public static class Action implements Serializable {
-        /**
-         * The {@link LibraryActionMessage#actionId} of the pending action
-         */
-        public int actionId;
-        /**
-         * The {@link dev.blackilykat.Client#clientId} of the client who performed the action
-         */
-        public int clientId;
-        /**
-         * The name of the file the action is about
-         */
-        public String fileName;
-        /**
-         *
-         */
-        public Type actionType;
-        public List<Pair<String, String>> newMetadata = null;
-
-        public Action(int actionId, int clientId, String fileName, Type actionType) {
-            this.actionId = actionId;
-            this.clientId = clientId;
-            this.fileName = fileName;
-            this.actionType = actionType;
-        }
-
-        public Action(int actionId, int clientId, String fileName, Type actionType, List<Pair<String, String>> newMetadata) {
-            // TODO check for correct initializer (ion feel like doing it rn)
-            this.actionId = actionId;
-            this.clientId = clientId;
-            this.fileName = fileName;
-            this.actionType = actionType;
-            this.newMetadata = newMetadata;
-        }
-
-        public Action() {
-            this.actionId = -1;
-            this.clientId = -1;
-            this.fileName = "";
-        }
-
-        public LibraryActionMessage toMessage() {
-            if(actionType != Type.CHANGE_METADATA) {
-                return new LibraryActionMessage(actionType, actionId, fileName);
-            } else {
-                return new LibraryActionMessage(actionType, actionId, fileName, newMetadata);
-            }
-        }
-    }
 
     public static void main(String[] args) {
         System.out.println("testing so hard rn");
-        LibraryActionMessage message = new LibraryActionMessage(Type.CHANGE_METADATA,
+        LibraryActionMessage message = new LibraryActionMessage(LibraryAction.Type.CHANGE_METADATA,
                 2,
                 "test.flac",
                 List.of(

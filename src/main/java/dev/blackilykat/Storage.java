@@ -29,7 +29,7 @@ import java.util.Map;
 public class Storage {
     public static final File LIBRARY = new File("library/");
     // using the message's class cause it has all the needed info
-    public static Map<Integer, LibraryActionMessage.Action> actions;
+    public static Map<Integer, LibraryAction> actions;
     public static Map<String, Object> general;
 
     public static void init() {
