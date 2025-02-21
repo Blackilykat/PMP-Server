@@ -92,7 +92,7 @@ public class FileTransferHttpHandler implements HttpHandler {
                 outputStream.close();
             }
             case "POST" -> {
-                if(LibraryActionMessage.pendingAction.actionType != LibraryActionMessage.Type.ADD) {
+                if(LibraryActionMessage.pendingAction.actionType != LibraryAction.Type.ADD) {
                     exchange.sendResponseHeaders(403, 0);
                     exchange.getResponseBody().close();
                     return;
@@ -112,7 +112,7 @@ public class FileTransferHttpHandler implements HttpHandler {
                 LibraryActionMessage.pendingAction.finished = true;
             }
             case "PUT" -> {
-                if(LibraryActionMessage.pendingAction.actionType != LibraryActionMessage.Type.REPLACE) {
+                if(LibraryActionMessage.pendingAction.actionType != LibraryAction.Type.REPLACE) {
                     exchange.sendResponseHeaders(403, 0);
                     exchange.getResponseBody().close();
                     return;
