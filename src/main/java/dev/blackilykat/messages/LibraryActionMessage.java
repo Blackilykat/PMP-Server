@@ -222,20 +222,4 @@ public class LibraryActionMessage extends Message {
             return cancelled;
         }
     }
-
-
-    public static void main(String[] args) {
-        System.out.println("testing so hard rn");
-        LibraryActionMessage message = new LibraryActionMessage(LibraryAction.Type.CHANGE_METADATA,
-                2,
-                "test.flac",
-                List.of(
-                        new Pair("artist", "Somebody"),
-                        new Pair("title", "I once had a title"),
-                        new Pair("artist", "Someone else"),
-                        new Pair("duration", "3 fucking years"),
-                        new Pair("album", "Memory lane")
-                ));
-        System.out.println(message);
-    }
 }
