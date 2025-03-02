@@ -20,13 +20,14 @@
 
 package dev.blackilykat;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaybackSession {
-    private static List<PlaybackSession> availableSessions = new ArrayList<>();
-    public static int idCounter = 1;
+public class PlaybackSession implements Serializable {
+    private static List<PlaybackSession> availableSessions = Storage.getSessionList();
+    public static int idCounter = Storage.getSessionIDCounter();
     public int id;
     public String track = null;
     public ShuffleOption shuffle = ShuffleOption.OFF;
@@ -56,6 +57,23 @@ public class PlaybackSession {
         offset -= offset % 4;
         lastPositionUpdate += offset;
         lastPositionUpdateTime = atTime;
+    }
+
+    /**
+     * Prepares sessions to be stored at shutdown. Must not be called in any other occasion as it removes every
+     * session's owner and pauses it without sending any update to connected clients.
+     */
+    public static List<PlaybackSession> packUpSessions() {
+        Instant now = Instant.now();
+        for(PlaybackSession session : availableSessions) {
+            Instant lastUpdate = session.lastPositionUpdateTime;
+            session.recalculatePosition(now);
+            // make sure clients have a more recent update so they can inform the server of the new position once it's back up
+            session.lastPositionUpdateTime = lastUpdate.minusMillis(1000);
+            session.playing = false;
+            session.owner = -1;
+        }
+        return availableSessions;
     }
 
     public enum ShuffleOption {

@@ -20,15 +20,16 @@
 
 package dev.blackilykat;
 
-import dev.blackilykat.messages.LibraryActionMessage;
 import org.h2.mvstore.MVStore;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("unchecked")
 public class Storage {
     public static final File LIBRARY = new File("library/");
-    // using the message's class cause it has all the needed info
     public static Map<Integer, LibraryAction> actions;
     public static Map<String, Object> general;
 
@@ -36,7 +37,10 @@ public class Storage {
         MVStore mvStore = MVStore.open("db");
         actions = mvStore.openMap("actions");
         general = mvStore.openMap("general");
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            setSessionList(PlaybackSession.packUpSessions());
+            setSessionIDCounter(PlaybackSession.idCounter);
             mvStore.close();
         }));
     }
@@ -52,5 +56,23 @@ public class Storage {
 
     public static void setCurrentActionID(int newValue) {
         general.put("currentActionID", newValue);
+    }
+
+    // MVStore cries if I try putting an arraylist into it (even though its serializable) so it has to be an array
+    public static List<PlaybackSession> getSessionList() {
+        PlaybackSession[] array = (PlaybackSession[]) general.getOrDefault("sessionList", new PlaybackSession[0]);
+        return new ArrayList<>(List.of(array));
+    }
+
+    public static void setSessionList(List<PlaybackSession> newValue) {
+        general.put("sessionList", newValue.toArray(new PlaybackSession[0]));
+    }
+
+    public static int getSessionIDCounter() {
+        return (Integer) general.getOrDefault("sessionIDCounter", 1);
+    }
+
+    public static void setSessionIDCounter(int newValue) {
+        general.put("sessionIDCounter", newValue);
     }
 }
