@@ -142,6 +142,7 @@ public class LibraryActionMessage extends Message {
             errorMessage.relativeToMessage = messageId;
             errorMessage.info = "The server does not support changing metadata yet! :(";
             client.send(errorMessage);
+            return;
         } else if(actionType == LibraryAction.Type.REMOVE) {
             File toRemove = new File(Storage.LIBRARY, fileName);
             if(!toRemove.delete()) {
