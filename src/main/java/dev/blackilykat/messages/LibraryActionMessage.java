@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import dev.blackilykat.Client;
 import dev.blackilykat.Json;
 import dev.blackilykat.LibraryAction;
+import dev.blackilykat.Pair;
 import dev.blackilykat.Storage;
 import dev.blackilykat.messages.exceptions.MessageException;
 
@@ -160,15 +161,6 @@ public class LibraryActionMessage extends Message {
     }
 
 
-    public static class Pair<T, U> {
-        public T key;
-        public U value;
-
-        public Pair(T key, U value) {
-            this.key = key;
-            this.value = value;
-        }
-    }
 
     public static class PendingAction extends LibraryAction {
         /**

@@ -33,6 +33,7 @@ public class PlaybackSession implements Serializable {
     public int lastPositionUpdate = 0;
     public Instant lastPositionUpdateTime = null;
     public int owner = -1;
+    public List<LibraryFilter> filters = new ArrayList<>();
 
     public PlaybackSession(int id) {
         this.id = id;

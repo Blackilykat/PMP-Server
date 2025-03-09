@@ -37,7 +37,7 @@ public class LibraryAction implements Serializable {
     public String fileName;
 
     public Type actionType;
-    public List<LibraryActionMessage.Pair<String, String>> newMetadata = null;
+    public List<Pair<String, String>> newMetadata = null;
 
     public LibraryAction(int actionId, int clientId, String fileName, Type actionType) {
         if(actionType == Type.CHANGE_METADATA) throw new IllegalArgumentException("Wrong initializer for action type CHANGE_METADATA!");
@@ -47,7 +47,7 @@ public class LibraryAction implements Serializable {
         this.actionType = actionType;
     }
 
-    public LibraryAction(int actionId, int clientId, String fileName, List<LibraryActionMessage.Pair<String, String>> newMetadata) {
+    public LibraryAction(int actionId, int clientId, String fileName, List<Pair<String, String>> newMetadata) {
         this.actionId = actionId;
         this.clientId = clientId;
         this.fileName = fileName;

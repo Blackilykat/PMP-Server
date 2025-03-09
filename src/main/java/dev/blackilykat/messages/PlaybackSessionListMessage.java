@@ -18,9 +18,12 @@
 package dev.blackilykat.messages;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.blackilykat.Client;
+import dev.blackilykat.Json;
+import dev.blackilykat.LibraryFilter;
+import dev.blackilykat.LibraryFilterOption;
+import dev.blackilykat.Pair;
 import dev.blackilykat.PlaybackSession;
 import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
@@ -66,6 +69,7 @@ public class PlaybackSessionListMessage extends Message {
                 obj.addProperty("lastUpdateTime", session.lastUpdateTime.toEpochMilli());
             }
             obj.addProperty("owner", session.owner);
+            obj.add("filters", Json.GSON.toJsonTree(session.filters));
 
             arr.add(obj);
         }
@@ -90,9 +94,10 @@ public class PlaybackSessionListMessage extends Message {
         public int lastPositionUpdate;
         public int owner;
         public Instant lastUpdateTime;
+        public List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters;
 
         public PlaybackSessionElement(int id, String track, PlaybackSession.ShuffleOption shuffle, PlaybackSession.RepeatOption repeat,
-                                      boolean playing, int lastPositionUpdate, int owner, Instant lastUpdateTime) {
+                                      boolean playing, int lastPositionUpdate, int owner, List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters, Instant lastUpdateTime) {
             this.id = id;
             this.track = track;
             this.shuffle = shuffle;
@@ -100,11 +105,13 @@ public class PlaybackSessionListMessage extends Message {
             this.playing = playing;
             this.lastPositionUpdate = lastPositionUpdate;
             this.owner = owner;
+            this.filters = filters;
             this.lastUpdateTime = lastUpdateTime;
         }
 
         public PlaybackSessionElement(PlaybackSession session) {
-            this(session.id, session.track, session.shuffle, session.repeat, session.playing, session.lastPositionUpdate, session.owner, session.lastPositionUpdateTime);
+            this(session.id, session.track, session.shuffle, session.repeat, session.playing, session.lastPositionUpdate, session.owner, PlaybackSessionUpdateMessage.getFiltersFromSession(session), session.lastPositionUpdateTime);
         }
+
     }
 }
