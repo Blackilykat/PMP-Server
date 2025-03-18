@@ -17,9 +17,11 @@
 
 package dev.blackilykat;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,7 +33,7 @@ public class LibraryFilter {
     /**
      * All options the user can select.
      */
-    private Set<LibraryFilterOption> options = new HashSet<>();
+    private List<LibraryFilterOption> options = new ArrayList<>();
     public PlaybackSession session;
 
     public LibraryFilter(PlaybackSession session, String key) {
