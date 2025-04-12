@@ -19,6 +19,7 @@ package dev.blackilykat;
 
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
+import dev.blackilykat.messages.DataHeaderListMessage;
 import dev.blackilykat.messages.LibraryHashesMessage;
 import dev.blackilykat.messages.PlaybackSessionCreateMessage;
 import dev.blackilykat.messages.PlaybackSessionListMessage;
@@ -118,11 +119,17 @@ public class Main {
             Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
             client.startSending();
             client.send(new WelcomeMessage(client.clientId, Storage.getCurrentActionID()));
+
             System.out.println("Connected to client " + client);
             System.out.println("All connected clients: " + clients.toString());
             Client.broadcast(new TestMessage(client.clientId));
             client.send(LibraryHashesMessage.create());
             client.send(new PlaybackSessionListMessage(PlaybackSession.getAvailableSessions()));
+
+            DataHeaderListMessage headersMsg = new DataHeaderListMessage();
+            headersMsg.headers.addAll(Storage.getTrackDataHeaders());
+            client.send(headersMsg);
+
             client.startReceiving();
         }
     }

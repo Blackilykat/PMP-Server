@@ -72,4 +72,13 @@ public class Storage {
     public static void setSessionIDCounter(int newValue) {
         general.put("sessionIDCounter", newValue);
     }
+
+    public static List<Pair<String, String>> getTrackDataHeaders() {
+        Pair<String, String>[] array = (Pair<String, String>[]) general.getOrDefault("trackDataHeaders", new Pair[0]);
+        return new ArrayList<>(List.of(array));
+    }
+
+    public static void setTrackDataHeaders(List<Pair<String, String>> newValue) {
+        general.put("trackDataHeaders", newValue.toArray(new Pair[0]));
+    }
 }

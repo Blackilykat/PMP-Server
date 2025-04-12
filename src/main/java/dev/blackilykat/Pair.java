@@ -17,7 +17,9 @@
 
 package dev.blackilykat;
 
-public class Pair<T, U> {
+import java.io.Serializable;
+
+public class Pair<T, U> implements Serializable {
     public T key;
     public U value;
 
