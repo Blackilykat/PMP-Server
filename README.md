@@ -1,4 +1,4 @@
-## ⚠️⚠️⚠️ THIS IS IN PRE-ALPHA! This means that it is unsecure, buggy, incomplete and likely to break over time. Do not use this if not for development and testing purposes until it reaches alpha.
+## ⚠️⚠️⚠️ THIS IS IN PRE-ALPHA! This means that it is buggy, incomplete and likely to break over time. Do not use this if not for development and testing purposes until it reaches alpha.
 
 # PMP-Server
 This is the server for Personal Music Platform (that name is subject to change, I couldn't come up with anything better)
