@@ -31,6 +31,13 @@ public class Storage {
     public static Map<String, Object> general;
 
     public static void init() {
+        if(!LIBRARY.exists()) {
+            LIBRARY.mkdirs();
+        } else if(!LIBRARY.isDirectory()) {
+            throw new RuntimeException("library is a file! It must be renamed or deleted for the program to function.");
+        }
+
+
         MVStore mvStore = MVStore.open("db");
         actions = mvStore.openMap("actions");
         general = mvStore.openMap("general");

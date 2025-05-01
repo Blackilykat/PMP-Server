@@ -59,9 +59,9 @@ public class Main {
     public static int clientIdCounter = 0;
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Initializing database...");
+        System.out.println("Initializing storage...");
         Storage.init();
-        System.out.println("Initialized database");
+        System.out.println("Initialized storage");
 
         System.out.println("Preparing SSL...");
         SSLContext sslContext;
