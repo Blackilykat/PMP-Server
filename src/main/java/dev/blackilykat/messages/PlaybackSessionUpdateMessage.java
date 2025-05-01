@@ -22,6 +22,7 @@ import dev.blackilykat.Client;
 import dev.blackilykat.Json;
 import dev.blackilykat.LibraryFilter;
 import dev.blackilykat.LibraryFilterOption;
+import dev.blackilykat.Order;
 import dev.blackilykat.Pair;
 import dev.blackilykat.PlaybackSession;
 import dev.blackilykat.messages.exceptions.MessageException;
@@ -56,6 +57,8 @@ public class PlaybackSessionUpdateMessage extends Message {
     // I use an ordered map here, I cannot guarantee that the JSON library maintains the order of properties of an object.
     // An incorrectly ordered map would result, for example, in the "All" option being in the middle rather than at the top.
     public List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters;
+    public Integer sortingHeader;
+    public Order sortingOrder;
 
 
     /**
@@ -69,7 +72,20 @@ public class PlaybackSessionUpdateMessage extends Message {
      * @param filters The library filters and their options
      * @param time When the update happened (prevents large de-syncs)
      */
-    public PlaybackSessionUpdateMessage(int sessionId, String track, PlaybackSession.ShuffleOption shuffle, PlaybackSession.RepeatOption repeat, Boolean playing, Integer position, Integer owner, List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters, Instant time) {
+    public PlaybackSessionUpdateMessage(
+            int sessionId,
+            String track,
+            PlaybackSession.ShuffleOption shuffle,
+            PlaybackSession.RepeatOption repeat,
+            Boolean playing,
+            Integer position,
+            Integer owner,
+            List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters,
+            Integer sortingHeader,
+            Order sortingOrder,
+            Instant time
+
+    ) {
         this.sessionId = sessionId;
         this.track = track;
         this.shuffle = shuffle;
@@ -78,6 +94,8 @@ public class PlaybackSessionUpdateMessage extends Message {
         this.position = position;
         this.owner = owner;
         this.filters = filters;
+        this.sortingHeader = sortingHeader;
+        this.sortingOrder = sortingOrder;
         this.time = time;
     }
 
@@ -112,6 +130,12 @@ public class PlaybackSessionUpdateMessage extends Message {
         }
         if(time != null) {
             object.addProperty("time", time.toEpochMilli());
+        }
+        if(sortingHeader != null) {
+            object.addProperty("sortingHeader", sortingHeader);
+        }
+        if(sortingOrder != null) {
+            object.addProperty("sortingOrder", sortingOrder.toString());
         }
     }
 
@@ -151,6 +175,14 @@ public class PlaybackSessionUpdateMessage extends Message {
                 session.filters = filtersInSession;
             }
 
+            if(sortingHeader != null) {
+                session.sortingHeader = sortingHeader;
+            }
+
+            if(sortingOrder != null) {
+                session.sortingOrder = sortingOrder;
+            }
+
             break;
         }
         Client.broadcastExcept(this, client.clientId);
@@ -187,6 +219,8 @@ public class PlaybackSessionUpdateMessage extends Message {
                 json.has("position") ? json.get("position").getAsInt() : null,
                 json.has("owner") ? json.get("owner").getAsInt() : null,
                 filters,
+                json.has("sortingHeader") ? json.get("sortingHeader").getAsInt() : null,
+                json.has("sortingOrder") ? Order.valueOf(json.get("sortingOrder").getAsString()) : null,
                 json.has("time") ? Instant.ofEpochMilli(json.get("time").getAsLong()) : Instant.now()
         );
     }

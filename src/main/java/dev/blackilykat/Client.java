@@ -89,7 +89,7 @@ public class Client {
                 Instant now = Instant.now();
                 session.recalculatePosition(now);
                 session.playing = false;
-                Client.broadcast(new PlaybackSessionUpdateMessage(session.id, null, null, null, false, session.lastPositionUpdate, -1, null, session.lastPositionUpdateTime));
+                Client.broadcast(new PlaybackSessionUpdateMessage(session.id, null, null, null, false, session.lastPositionUpdate, -1, null, null, null, session.lastPositionUpdateTime));
             }
         }
     }

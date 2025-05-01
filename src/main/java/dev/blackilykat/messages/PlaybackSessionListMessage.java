@@ -23,6 +23,7 @@ import dev.blackilykat.Client;
 import dev.blackilykat.Json;
 import dev.blackilykat.LibraryFilter;
 import dev.blackilykat.LibraryFilterOption;
+import dev.blackilykat.Order;
 import dev.blackilykat.Pair;
 import dev.blackilykat.PlaybackSession;
 import dev.blackilykat.messages.exceptions.MessageException;
@@ -70,6 +71,8 @@ public class PlaybackSessionListMessage extends Message {
             }
             obj.addProperty("owner", session.owner);
             obj.add("filters", Json.GSON.toJsonTree(session.filters));
+            obj.addProperty("sortingHeader", session.sortingHeader);
+            obj.addProperty("sortingOrder", session.sortingOrder.toString());
 
             arr.add(obj);
         }
@@ -95,9 +98,22 @@ public class PlaybackSessionListMessage extends Message {
         public int owner;
         public Instant lastUpdateTime;
         public List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters;
+        public int sortingHeader;
+        public Order sortingOrder;
 
-        public PlaybackSessionElement(int id, String track, PlaybackSession.ShuffleOption shuffle, PlaybackSession.RepeatOption repeat,
-                                      boolean playing, int lastPositionUpdate, int owner, List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters, Instant lastUpdateTime) {
+        public PlaybackSessionElement(
+                int id,
+                String track,
+                PlaybackSession.ShuffleOption shuffle,
+                PlaybackSession.RepeatOption repeat,
+                boolean playing,
+                int lastPositionUpdate,
+                int owner,
+                List<Pair<String, List<Pair<String, LibraryFilterOption.State>>>> filters,
+                int sortingHeader,
+                Order sortingOrder,
+                Instant lastUpdateTime
+        ) {
             this.id = id;
             this.track = track;
             this.shuffle = shuffle;
@@ -107,11 +123,24 @@ public class PlaybackSessionListMessage extends Message {
             this.owner = owner;
             this.filters = filters;
             this.lastUpdateTime = lastUpdateTime;
+            this.sortingHeader = sortingHeader;
+            this.sortingOrder = sortingOrder;
         }
 
         public PlaybackSessionElement(PlaybackSession session) {
-            this(session.id, session.track, session.shuffle, session.repeat, session.playing, session.lastPositionUpdate, session.owner, PlaybackSessionUpdateMessage.getFiltersFromSession(session), session.lastPositionUpdateTime);
+            this(
+                    session.id,
+                    session.track,
+                    session.shuffle,
+                    session.repeat,
+                    session.playing,
+                    session.lastPositionUpdate,
+                    session.owner,
+                    PlaybackSessionUpdateMessage.getFiltersFromSession(session),
+                    session.sortingHeader,
+                    session.sortingOrder,
+                    session.lastPositionUpdateTime
+            );
         }
-
     }
 }

@@ -34,6 +34,8 @@ public class PlaybackSession implements Serializable {
     public Instant lastPositionUpdateTime = null;
     public int owner = -1;
     public List<LibraryFilter> filters = new ArrayList<>();
+    public int sortingHeader = 0;
+    public Order sortingOrder = Order.DESCENDING;
 
     public PlaybackSession(int id) {
         this.id = id;
