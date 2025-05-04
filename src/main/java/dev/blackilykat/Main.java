@@ -33,14 +33,17 @@ import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOError;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -52,9 +55,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 public class Main {
+    public static final int PASSWORD_LOG_ROUNDS = 15;
     public static ArrayList<Client> clients = new ArrayList<>();
     public static int clientIdCounter = 0;
 
@@ -62,6 +67,45 @@ public class Main {
         System.out.println("Initializing storage...");
         Storage.init();
         System.out.println("Initialized storage");
+
+        boolean passwordArg = Arrays.asList(args).contains("--password");
+        if(!Storage.general.containsKey("password") || passwordArg) {
+            Console console = System.console();
+            if(console == null) {
+                // If you run the program in your IDE's terminal and it exits here, try running it in a real terminal.
+                System.err.println("Need a terminal to read password. Exiting");
+                System.exit(1);
+            }
+
+            String hashedPassword = null;
+            {
+                try {
+                    char[] password;
+                    while(true) {
+                        System.out.print("Insert password: ");
+                        password = console.readPassword();
+                        System.out.print("Insert password again: ");
+                        if(!Arrays.equals(console.readPassword(), password)) {
+                            System.out.println("Passwords don't match!");
+                            continue;
+                        }
+                        break;
+                    }
+
+                    hashedPassword = BCrypt.hashpw(new String(password), BCrypt.gensalt(PASSWORD_LOG_ROUNDS));
+                } catch(IOError e) {
+                    // unreachable i think
+                    throw new RuntimeException(e);
+                }
+            }
+            Storage.general.put("password", hashedPassword);
+            System.out.println("Password set");
+
+            if(passwordArg) {
+                System.out.println("Found password argument, exiting");
+                System.exit(0);
+            }
+        }
 
         System.out.println("Preparing SSL...");
         SSLContext sslContext;
@@ -117,20 +161,13 @@ public class Main {
 
         while(true) {
             Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
-            client.startSending();
-            client.send(new WelcomeMessage(client.clientId, Storage.getCurrentActionID()));
-
             System.out.println("Connected to client " + client);
             System.out.println("All connected clients: " + clients.toString());
-            Client.broadcast(new TestMessage(client.clientId));
-            client.send(LibraryHashesMessage.create());
-            client.send(new PlaybackSessionListMessage(PlaybackSession.getAvailableSessions()));
 
-            DataHeaderListMessage headersMsg = new DataHeaderListMessage();
-            headersMsg.headers.addAll(Storage.getTrackDataHeaders());
-            client.send(headersMsg);
-
+            client.startSending();
             client.startReceiving();
+
+
         }
     }
 }

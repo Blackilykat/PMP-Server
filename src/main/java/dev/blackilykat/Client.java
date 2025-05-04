@@ -38,6 +38,8 @@ public class Client {
     public InputStream inputStream;
     public OutputStream outputStream;
     public boolean connected = true;
+    public LoginStage loginStage = LoginStage.LOGGED_OUT;
+    public final Object loginLock = new Object();
     public BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
     public StringBuffer inputBuffer = new StringBuffer();
     private MessageSendingThread messageSendingThread = new MessageSendingThread();
@@ -50,7 +52,6 @@ public class Client {
         this.socket = socket;
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
-        Main.clients.add(this);
         socket.startHandshake();
     }
 
@@ -182,7 +183,10 @@ public class Client {
                         inputBuffer.append((char) read);
                     } else if(!inputBuffer.isEmpty()) {
                         String message = inputBuffer.toString();
-                        System.out.printf("Received from client %d: %s\n", clientId, message);
+                        // avoid printing password. Doesn't need to be a flawless check as these are debug prints.
+                        if(!message.contains("\"LOGIN\"")) {
+                            System.out.printf("Received from client %d: %s\n", clientId, message);
+                        }
                         try {
                             JsonObject json = Json.fromJsonObject(message);
                             String messageType;
@@ -190,6 +194,16 @@ public class Client {
                                 messageType = json.get("message_type").getAsString();
                             } else {
                                 throw new MessageMissingContentsException("Missing message_type field!");
+                            }
+
+                            while(loginStage == LoginStage.PROCESSING) {
+                                synchronized(loginLock) {
+                                    loginLock.wait();
+                                }
+                            }
+                            if(loginStage == LoginStage.LOGGED_OUT && !messageType.equals(LoginMessage.MESSAGE_TYPE)) {
+                                increaseMessageIdCounter();
+                                sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, getMessageIdCounter()-1, "Logged out");
                             }
 
                             Message parsedMessage = switch(messageType.toUpperCase()) {
@@ -203,6 +217,7 @@ public class Client {
                                 case PlaybackSessionUpdateMessage.MESSAGE_TYPE -> PlaybackSessionUpdateMessage.fromJson(json);
                                 case PlaybackSessionListMessage.MESSAGE_TYPE -> PlaybackSessionListMessage.fromJson(json);
                                 case DataHeaderListMessage.MESSAGE_TYPE -> DataHeaderListMessage.fromJson(json);
+                                case LoginMessage.MESSAGE_TYPE -> LoginMessage.fromJson(json);
                                 default -> {
                                     throw new MessageInvalidContentsException("Unknown message_type '"+messageType+"'");
                                 }
@@ -223,6 +238,11 @@ public class Client {
                             sendError(ErrorMessage.ErrorType.MESSAGE_MISSING_CONTENTS, getMessageIdCounter()-1, e.getMessage());
                         } catch (MessageException ignored) {
                             //unreachable
+                        } catch(InterruptedException e) {
+                            // The fact we got this exception implies that Thread.interrupted() was called somewhere
+                            // along the way, which clears the interrupted status of the thread. To ensure the loop
+                            // above can tell the thread was interrupted, we must interrupt it again.
+                            Thread.currentThread().interrupt();
                         }
 
 

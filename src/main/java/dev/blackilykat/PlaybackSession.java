@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlaybackSession implements Serializable {
-    private static List<PlaybackSession> availableSessions = Storage.getSessionList();
-    public static int idCounter = Storage.getSessionIDCounter();
+    private static List<PlaybackSession> availableSessions = null;
+    public static int idCounter = -1;
     public int id;
     public String track = null;
     public ShuffleOption shuffle = ShuffleOption.OFF;
@@ -39,6 +39,12 @@ public class PlaybackSession implements Serializable {
 
     public PlaybackSession(int id) {
         this.id = id;
+        if(availableSessions == null) {
+            availableSessions = Storage.getSessionList();
+        }
+        if(idCounter == -1) {
+            idCounter = Storage.getSessionIDCounter();
+        }
     }
 
     public void register() {
@@ -46,6 +52,7 @@ public class PlaybackSession implements Serializable {
     }
 
     public static PlaybackSession[] getAvailableSessions() {
+        if(availableSessions == null) return new PlaybackSession[0];
         return availableSessions.toArray(new PlaybackSession[0]);
     }
 

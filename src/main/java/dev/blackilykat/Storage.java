@@ -20,6 +20,7 @@ package dev.blackilykat;
 import org.h2.mvstore.MVStore;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class Storage {
     public static Map<Integer, LibraryAction> actions;
     public static Map<String, Object> general;
 
-    public static void init() {
+    public static void init() throws IOException {
         if(!LIBRARY.exists()) {
             LIBRARY.mkdirs();
         } else if(!LIBRARY.isDirectory()) {
@@ -47,6 +48,7 @@ public class Storage {
             setSessionIDCounter(PlaybackSession.idCounter);
             mvStore.close();
         }));
+
     }
 
     public static int getCurrentActionID() {
@@ -87,5 +89,10 @@ public class Storage {
 
     public static void setTrackDataHeaders(List<Pair<String, String>> newValue) {
         general.put("trackDataHeaders", newValue.toArray(new Pair[0]));
+    }
+
+    public static String getPassword() {
+        if(!general.containsKey("password")) return null;
+        return general.get("password").toString();
     }
 }
