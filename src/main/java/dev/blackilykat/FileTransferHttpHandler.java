@@ -22,6 +22,7 @@ import com.sun.net.httpserver.HttpHandler;
 import dev.blackilykat.messages.LibraryActionMessage;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -29,7 +30,7 @@ import java.nio.file.Files;
 public class FileTransferHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        String filename = exchange.getRequestURI().getPath().replace("..", "");
+        String filename = URLDecoder.decode(exchange.getRequestURI().getPath().replace("..", ""), StandardCharsets.UTF_8);
         File file = new File(Storage.LIBRARY.getAbsolutePath(), filename);
         int actionId = -1;
         int clientId = -1;
