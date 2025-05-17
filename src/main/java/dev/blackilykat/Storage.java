@@ -31,7 +31,7 @@ public class Storage {
     public static Map<Integer, LibraryAction> actions;
     public static Map<String, Object> general;
 
-    public static void init() throws IOException {
+    public static void init(final boolean saveOnShutdown) throws IOException {
         if(!LIBRARY.exists()) {
             LIBRARY.mkdirs();
         } else if(!LIBRARY.isDirectory()) {
@@ -44,11 +44,14 @@ public class Storage {
         general = mvStore.openMap("general");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            setSessionList(PlaybackSession.packUpSessions());
-            setSessionIDCounter(PlaybackSession.idCounter);
+            if (saveOnShutdown) {
+                setSessionList(PlaybackSession.packUpSessions());
+                setSessionIDCounter(PlaybackSession.idCounter);
+            }
             mvStore.close();
         }));
 
+        PlaybackSession.idCounter = getSessionIDCounter();
     }
 
     public static int getCurrentActionID() {

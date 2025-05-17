@@ -42,9 +42,6 @@ public class PlaybackSession implements Serializable {
         if(availableSessions == null) {
             availableSessions = Storage.getSessionList();
         }
-        if(idCounter == -1) {
-            idCounter = Storage.getSessionIDCounter();
-        }
     }
 
     public void register() {
