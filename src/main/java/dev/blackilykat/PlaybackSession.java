@@ -71,6 +71,7 @@ public class PlaybackSession implements Serializable {
      * session's owner and pauses it without sending any update to connected clients.
      */
     public static List<PlaybackSession> packUpSessions() {
+        if(availableSessions == null) return new ArrayList<>();
         Instant now = Instant.now();
         for(PlaybackSession session : availableSessions) {
             Instant lastUpdate = session.lastPositionUpdateTime;
