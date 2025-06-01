@@ -17,7 +17,9 @@
 
 package dev.blackilykat;
 
-public class LibraryFilterOption implements Comparable<LibraryFilterOption> {
+import java.io.Serializable;
+
+public class LibraryFilterOption implements Comparable<LibraryFilterOption>, Serializable {
     public final LibraryFilter filter;
     public final String value;
     public State state = State.NONE;

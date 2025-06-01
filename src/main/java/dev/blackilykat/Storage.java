@@ -22,6 +22,7 @@ import org.h2.mvstore.MVStore;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +53,7 @@ public class Storage {
         }));
 
         PlaybackSession.idCounter = getSessionIDCounter();
+        PlaybackSession.availableSessions = getSessionList();
     }
 
     public static int getCurrentActionID() {

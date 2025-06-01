@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlaybackSession implements Serializable {
-    private static List<PlaybackSession> availableSessions = null;
+    public static List<PlaybackSession> availableSessions = null;
     public static int idCounter = -1;
     public int id;
     public String track = null;
@@ -39,9 +39,6 @@ public class PlaybackSession implements Serializable {
 
     public PlaybackSession(int id) {
         this.id = id;
-        if(availableSessions == null) {
-            availableSessions = Storage.getSessionList();
-        }
     }
 
     public void register() {

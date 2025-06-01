@@ -17,15 +17,12 @@
 
 package dev.blackilykat;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-public class LibraryFilter {
+public class LibraryFilter implements Serializable {
     /**
      * The FLAC metadata key this filter is based on. Some examples can be <code>artist</code> and <code>album</code>.
      */
