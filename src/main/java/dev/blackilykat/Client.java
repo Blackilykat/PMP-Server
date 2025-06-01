@@ -204,6 +204,7 @@ public class Client {
                             if(loginStage == LoginStage.LOGGED_OUT && !messageType.equals(LoginMessage.MESSAGE_TYPE)) {
                                 increaseMessageIdCounter();
                                 sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, getMessageIdCounter()-1, "Logged out");
+                                inputBuffer.setLength(0);
                                 continue;
                             }
 
