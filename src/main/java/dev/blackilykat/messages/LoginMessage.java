@@ -78,6 +78,7 @@ public class LoginMessage extends Message {
         DataHeaderListMessage headersMsg = new DataHeaderListMessage();
         headersMsg.headers.addAll(Storage.getTrackDataHeaders());
         client.send(headersMsg);
+        client.send(new LatestHeaderIdMessage(Storage.getLatestHeaderId()));
         client.send(new PlaybackSessionListMessage(PlaybackSession.getAvailableSessions()));
 
         try {

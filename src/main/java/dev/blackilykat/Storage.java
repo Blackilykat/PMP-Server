@@ -32,7 +32,7 @@ public class Storage {
     public static Map<Integer, LibraryAction> actions;
     public static Map<String, Object> general;
 
-    public static void init(final boolean saveOnShutdown) throws IOException {
+    public static void init(final boolean saveOnShutdown) {
         if(!LIBRARY.exists()) {
             LIBRARY.mkdirs();
         } else if(!LIBRARY.isDirectory()) {
@@ -87,17 +87,29 @@ public class Storage {
         general.put("sessionIDCounter", newValue);
     }
 
-    public static List<Pair<String, String>> getTrackDataHeaders() {
-        Pair<String, String>[] array = (Pair<String, String>[]) general.getOrDefault("trackDataHeaders", new Pair[0]);
+    public static List<Triple<Integer, String, String>> getTrackDataHeaders() {
+        Triple<Integer, String, String>[] array = (Triple<Integer, String, String>[]) general.getOrDefault("trackDataHeaders", new Triple[0]);
         return new ArrayList<>(List.of(array));
     }
 
-    public static void setTrackDataHeaders(List<Pair<String, String>> newValue) {
-        general.put("trackDataHeaders", newValue.toArray(new Pair[0]));
+    public static void setTrackDataHeaders(List<Triple<Integer, String, String>> newValue) {
+        general.put("trackDataHeaders", newValue.toArray(new Triple[0]));
     }
 
     public static String getPassword() {
         if(!general.containsKey("password")) return null;
         return general.get("password").toString();
+    }
+
+    public static int getLatestHeaderId() {
+        return (int) general.getOrDefault("latestHeaderId", 1);
+    }
+
+    public static void setLatestHeaderId(int id) {
+        if(id < 1) {
+            general.remove("latestHeaderId");
+            return;
+        }
+        general.put("latestHeaderId", id);
     }
 }

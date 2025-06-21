@@ -24,6 +24,7 @@ import dev.blackilykat.Client;
 import dev.blackilykat.Main;
 import dev.blackilykat.Pair;
 import dev.blackilykat.Storage;
+import dev.blackilykat.Triple;
 import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 
@@ -33,7 +34,7 @@ import java.util.List;
 public class DataHeaderListMessage extends Message {
     public static final String MESSAGE_TYPE = "DATA_HEADER_LIST";
 
-    public List<Pair<String, String>> headers = new ArrayList<>();
+    public List<Triple<Integer, String, String>> headers = new ArrayList<>();
 
     public DataHeaderListMessage() {
     }
@@ -46,12 +47,13 @@ public class DataHeaderListMessage extends Message {
     @Override
     public void fillContents(JsonObject object) {
         JsonArray arr = new JsonArray();
-        for(Pair<String, String> header : headers) {
+        for(Triple<Integer, String, String> header : headers) {
             // could make it a key/value pair using JSON keys and values, but it's a mess to deal with that, and it would
             // prevent having duplicate headers which - while it would make little sense - should be perfectly valid
             JsonObject obj = new JsonObject();
-            obj.addProperty("key", header.key);
-            obj.addProperty("name", header.value);
+            obj.addProperty("id", header.a);
+            obj.addProperty("key", header.b);
+            obj.addProperty("name", header.c);
             arr.add(obj);
         }
         object.add("headers", arr);
@@ -62,7 +64,7 @@ public class DataHeaderListMessage extends Message {
         try {
             for(JsonElement headerElem : json.getAsJsonArray("headers")) {
                 JsonObject header = (JsonObject) headerElem;
-                msg.headers.add(new Pair<>(header.get("key").getAsString(), header.get("name").getAsString()));
+                msg.headers.add(new Triple<>(header.get("id").getAsInt(), header.get("key").getAsString(), header.get("name").getAsString()));
             }
         } catch(UnsupportedOperationException | ClassCastException e) {
             throw new MessageInvalidContentsException("Expected list of strings, found something else");
