@@ -46,6 +46,7 @@ public class Client {
     private MessageReceivingThread messageReceivingThread = new MessageReceivingThread();
     private int messageIdCounter = 0;
     public final int clientId;
+    public Device device;
 
     public Client(SSLSocket socket, int clientId) throws IOException {
         this.clientId = clientId;
@@ -158,7 +159,16 @@ public class Client {
                                 err.info);
                     }
                     String messageStr = (message.withMessageId(getMessageIdCounter()).toJson() + "\n");
-                    System.out.printf("Sending message to client %d: %s\n", clientId, messageStr);
+                    String printedMessage = messageStr;
+
+                    if(message instanceof WelcomeMessage wel) {
+                        String oldToken = wel.token;
+                        wel.token = "REDACTED";
+                        printedMessage = (message.withMessageId(getMessageIdCounter()).toJson() + "\n");
+                        wel.token = oldToken;
+                    }
+
+                    System.out.printf("Sending message to client %d: %s", clientId, printedMessage);
                     outputStream.write(messageStr.getBytes(StandardCharsets.UTF_8));
                     increaseMessageIdCounter();
                 }

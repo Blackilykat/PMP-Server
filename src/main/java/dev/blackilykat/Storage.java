@@ -30,6 +30,7 @@ import java.util.Map;
 public class Storage {
     public static final File LIBRARY = new File("library/");
     public static Map<Integer, LibraryAction> actions;
+    public static Map<Integer, Device> devices;
     public static Map<String, Object> general;
 
     public static void init(final boolean saveOnShutdown) {
@@ -42,6 +43,7 @@ public class Storage {
 
         MVStore mvStore = MVStore.open("db");
         actions = mvStore.openMap("actions");
+        devices = mvStore.openMap("devices");
         general = mvStore.openMap("general");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -111,5 +113,18 @@ public class Storage {
             return;
         }
         general.put("latestHeaderId", id);
+    }
+
+    public static int getLastDeviceId() {
+        return (int) general.getOrDefault("lastDeviceId", 1);
+    }
+
+    public static int setLastDeviceId(int id) {
+        if(id < 1) {
+            general.remove("lastDeviceId");
+            return id;
+        }
+        general.put("lastDeviceId", id);
+        return id;
     }
 }
