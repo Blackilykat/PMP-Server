@@ -30,6 +30,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -41,7 +43,6 @@ public class Client {
     public LoginStage loginStage = LoginStage.LOGGED_OUT;
     public final Object loginLock = new Object();
     public BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
-    public StringBuffer inputBuffer = new StringBuffer();
     private MessageSendingThread messageSendingThread = new MessageSendingThread();
     private MessageReceivingThread messageReceivingThread = new MessageReceivingThread();
     private int messageIdCounter = 0;
@@ -184,15 +185,20 @@ public class Client {
     private class MessageReceivingThread extends Thread {
         @Override
         public void run() {
+            Queue<Byte> inputBuffer = new ArrayDeque<>();
             try {
                 int read;
                 while(!Thread.interrupted()) {
                     read = inputStream.read();
                     if(read == -1) break;
                     if(read != ((int) '\n')) {
-                        inputBuffer.append((char) read);
+                        inputBuffer.add((byte) read);
                     } else if(!inputBuffer.isEmpty()) {
-                        String message = inputBuffer.toString();
+                        byte[] msg = new byte[inputBuffer.size()];
+                        for(int i = 0; i < msg.length; i++) {
+                            msg[i] = inputBuffer.poll();
+                        }
+                        String message = new String(msg, StandardCharsets.UTF_8);
                         // avoid printing password. Doesn't need to be a flawless check as these are debug prints.
                         if(!message.contains("\"LOGIN\"")) {
                             System.out.printf("Received from client %d: %s\n", clientId, message);
@@ -214,7 +220,6 @@ public class Client {
                             if(loginStage == LoginStage.LOGGED_OUT && !messageType.equals(LoginMessage.MESSAGE_TYPE)) {
                                 increaseMessageIdCounter();
                                 sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, getMessageIdCounter()-1, "Logged out");
-                                inputBuffer.setLength(0);
                                 continue;
                             }
 
@@ -257,9 +262,6 @@ public class Client {
                             // above can tell the thread was interrupted, we must interrupt it again.
                             Thread.currentThread().interrupt();
                         }
-
-
-                        inputBuffer.setLength(0);
                     }
                 }
             } catch (IOException e) {
