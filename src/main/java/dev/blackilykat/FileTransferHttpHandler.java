@@ -25,11 +25,23 @@ import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 //TODO authentication when i get around to it with the other socket as well
 public class FileTransferHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        String claimedToken = exchange.getRequestHeaders().get("Authorization").getFirst();
+        AtomicBoolean claimedTokenMatches = new AtomicBoolean(false);
+        Storage.devices.forEach((i, d) -> {
+            if(d.token.equals(claimedToken)) claimedTokenMatches.set(true);
+        });
+        if(!claimedTokenMatches.get()) {
+            exchange.sendResponseHeaders(403, 0);
+            exchange.getResponseBody().close();
+            return;
+        }
+
         String filename = URLDecoder.decode(exchange.getRequestURI().getPath().replace("..", ""), StandardCharsets.UTF_8);
         File file = new File(Storage.LIBRARY.getAbsolutePath(), filename);
         int actionId = -1;
