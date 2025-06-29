@@ -60,7 +60,7 @@ public class LoginMessage extends Message {
     public void fillContents(JsonObject object) {
         if(password != null) {
             object.addProperty("password", password);
-            object.addProperty("password", hostname);
+            object.addProperty("hostname", hostname);
         } else {
             object.addProperty("token", token);
             object.addProperty("deviceId", deviceId);
