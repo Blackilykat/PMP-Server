@@ -164,6 +164,7 @@ public class LoginMessage extends Message {
             } else if(json.has("deviceId")) {
                 return new LoginMessage(json.get("password").getAsString(), json.get("deviceId").getAsInt(), false);
             }
+            throw new MessageMissingContentsException("Got password but neither hostname or device id");
         } else if(json.has("token")) {
             if(!json.has("deviceId")) {
                 throw new MessageMissingContentsException("Missing device id");
