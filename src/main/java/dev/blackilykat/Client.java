@@ -223,6 +223,12 @@ public class Client {
                                 continue;
                             }
 
+                            if(!json.has("message_id")) {
+                                increaseMessageIdCounter();
+                                sendError(ErrorMessage.ErrorType.MESSAGE_MISSING_CONTENTS, -1, "Missing message id!");
+                            }
+                            int messageId = json.get("message_id").getAsInt();
+
                             Message parsedMessage = switch(messageType.toUpperCase()) {
                                 case WelcomeMessage.MESSAGE_TYPE -> WelcomeMessage.fromJson(json);
                                 case DisconnectMessage.MESSAGE_TYPE -> DisconnectMessage.fromJson(json);
@@ -240,6 +246,7 @@ public class Client {
                                     throw new MessageInvalidContentsException("Unknown message_type '"+messageType+"'");
                                 }
                             };
+                            parsedMessage.messageId = messageId;
                             parsedMessage.handle(Client.this);
 
                             System.out.println("Received message w/ type " + parsedMessage.getMessageType());
