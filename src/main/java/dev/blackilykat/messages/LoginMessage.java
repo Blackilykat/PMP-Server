@@ -40,14 +40,19 @@ public class LoginMessage extends Message {
     // or
     public String token = null;
     public int deviceId = -1;
+    // or password and deviceId to reset the token
 
     public LoginMessage(String password, String hostname) {
         this.password = password;
         this.hostname = hostname;
     }
 
-    public LoginMessage(String token, int deviceId) {
-        this.token = token;
+    public LoginMessage(String tokenOrPassword, int deviceId, boolean isToken) {
+        if(isToken) {
+            this.token = tokenOrPassword;
+        } else {
+            this.password = tokenOrPassword;
+        }
         this.deviceId = deviceId;
     }
 
@@ -60,9 +65,15 @@ public class LoginMessage extends Message {
     public void fillContents(JsonObject object) {
         if(password != null) {
             object.addProperty("password", password);
-            object.addProperty("hostname", hostname);
         } else {
             object.addProperty("token", token);
+        }
+
+        if(hostname != null) {
+            object.addProperty("hostname", hostname);
+        }
+
+        if(deviceId != -1) {
             object.addProperty("deviceId", deviceId);
         }
     }
@@ -93,9 +104,16 @@ public class LoginMessage extends Message {
                 return;
             }
 
-            device = new Device(hostname);
-            Storage.devices.put(device.id, device);
-        } else {
+            if(deviceId == -1){
+                device = new Device(hostname);
+                Storage.devices.put(device.id, device);
+            } else {
+                if((device = Storage.devices.get(deviceId)) == null) {
+                    client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "No device with that id");
+                    return;
+                }
+            }
+        } else if(deviceId != -1 && token != null) {
             device = Storage.devices.get(deviceId);
             if(!device.token.equals(token)) {
                 client.loginStage = LoginStage.LOGGED_OUT;
@@ -105,6 +123,9 @@ public class LoginMessage extends Message {
                 client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Invalid token");
                 return;
             }
+        } else {
+            client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Invalid combination of password, hostname, device id and token");
+            return;
         }
         device.connectedClient = client;
         client.device = device;
@@ -138,23 +159,17 @@ public class LoginMessage extends Message {
     //@Override
     public static Message fromJson(JsonObject json) throws MessageException {
         if(json.has("password")) {
-            return fromJsonWithPassword(json);
+            if(json.has("hostname")) {
+                return new LoginMessage(json.get("password").getAsString(), json.get("hostname").getAsString());
+            } else if(json.has("deviceId")) {
+                return new LoginMessage(json.get("password").getAsString(), json.get("deviceId").getAsInt(), false);
+            }
         } else if(json.has("token")) {
-            return fromJsonWithToken(json);
+            if(!json.has("deviceId")) {
+                throw new MessageMissingContentsException("Missing device id");
+            }
+            return new LoginMessage(json.get("token").getAsString(), json.get("deviceId").getAsInt(), true);
         }
         throw new MessageMissingContentsException("Missing both password and token");
     };
-
-    private static LoginMessage fromJsonWithPassword(JsonObject json) throws MessageException {
-        if(!json.has("password") || !json.has("hostname")) {
-            throw new MessageMissingContentsException("Missing password or hostname");
-        }
-        return new LoginMessage(json.get("password").getAsString(), json.get("hostname").getAsString());
-    }
-    private static LoginMessage fromJsonWithToken(JsonObject json) throws MessageException {
-        if(!json.has("token") || !json.has("deviceId")) {
-            throw new MessageMissingContentsException("Missing token or id");
-        }
-        return new LoginMessage(json.get("token").getAsString(), json.get("deviceId").getAsInt());
-    }
 }
