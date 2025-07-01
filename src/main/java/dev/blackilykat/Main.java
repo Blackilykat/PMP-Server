@@ -161,14 +161,22 @@ public class Main {
         SSLServerSocket serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(5000);
 
         while(true) {
-            Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
-            System.out.println("Connected to client " + client);
-            System.out.println("All connected clients: " + clients.toString());
+            try {
+                Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
+                System.out.println("Connected to client " + client);
+                System.out.println("All connected clients: " + clients.toString());
 
-            client.startSending();
-            client.startReceiving();
-
-
+                client.startSending();
+                client.startReceiving();
+            } catch(Exception e) {
+                System.err.println("Failed to connect a client.");
+                e.printStackTrace();
+            } catch(Throwable e) {
+                // Errors are designed to not be caught and shut down the program. They should print their stacktraces anyway
+                // but you can never be too safe
+                e.printStackTrace();
+                throw e;
+            }
         }
     }
 }
