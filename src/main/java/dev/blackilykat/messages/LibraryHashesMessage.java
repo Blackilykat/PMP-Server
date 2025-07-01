@@ -22,12 +22,15 @@ import com.google.gson.JsonObject;
 import dev.blackilykat.Client;
 import dev.blackilykat.Json;
 import dev.blackilykat.Storage;
+import dev.blackilykat.Track;
 import dev.blackilykat.messages.exceptions.MessageException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
@@ -72,13 +75,25 @@ public class LibraryHashesMessage extends Message {
         LibraryHashesMessage message = new LibraryHashesMessage();
         assert Storage.LIBRARY.exists() && Storage.LIBRARY.isDirectory();
         System.out.println("Calculating hashes for dir " + Storage.LIBRARY.getAbsolutePath());
+        List<Track> tracks = new LinkedList<>();
+        int filesCached = 0;
         for (File file : Storage.LIBRARY.listFiles()) {
-            CheckedInputStream inputStream = new CheckedInputStream(new FileInputStream(file), new CRC32());
-            // 1MB
-            byte[] buffer = new byte[1048576];
-            while(inputStream.read(buffer, 0, buffer.length) >= 0) {}
-            message.add(file.getName(), inputStream.getChecksum().getValue());
-            System.out.println("Calculated checksum for file " + file.getName() + ": " + inputStream.getChecksum().getValue());
+            String filename = file.getName();
+            Track track;
+            if(Storage.cachedTracks.containsKey(filename) && file.lastModified() == (track = Storage.cachedTracks.get(filename)).lastModified) {
+                filesCached++;
+            } else {
+                System.out.println(filename + " not cached!");
+                track = new Track(file);
+            }
+            message.add(filename, track.checksum);
+            tracks.add(track);
+        }
+        System.out.println(filesCached + " tracks cached");
+
+        Storage.cachedTracks.clear();
+        for(Track track : tracks) {
+            Storage.cachedTracks.put(track.file.getName(), track);
         }
         return message;
     }

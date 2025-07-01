@@ -32,6 +32,7 @@ public class Storage {
     public static Map<Integer, LibraryAction> actions;
     public static Map<Integer, Device> devices;
     public static Map<String, Object> general;
+    public static Map<String, Track> cachedTracks;
 
     public static void init(final boolean saveOnShutdown) {
         if(!LIBRARY.exists()) {
@@ -45,6 +46,7 @@ public class Storage {
         actions = mvStore.openMap("actions");
         devices = mvStore.openMap("devices");
         general = mvStore.openMap("general");
+        cachedTracks = mvStore.openMap("cachedTracks");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (saveOnShutdown) {
