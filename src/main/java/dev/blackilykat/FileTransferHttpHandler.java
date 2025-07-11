@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-//TODO authentication when i get around to it with the other socket as well
 public class FileTransferHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
