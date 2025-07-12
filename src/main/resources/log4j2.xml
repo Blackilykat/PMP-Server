@@ -21,8 +21,8 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="dev.blackilykat" level="TRACE"/>
-        <Root level="TRACE">
+        <Logger name="dev.blackilykat" level="DEBUG"/>
+        <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
             <AppenderRef ref="FILE"/>
         </Root>

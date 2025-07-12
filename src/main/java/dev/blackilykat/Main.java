@@ -54,7 +54,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 public class Main {
-    public static final Logger LOGGER = LogManager.getLogger();
+    public static final Logger LOGGER = LogManager.getLogger(Main.class);
     public static final int PASSWORD_LOG_ROUNDS = 15;
     public static ArrayList<Client> clients = new ArrayList<>();
     public static int clientIdCounter = 0;
