@@ -48,13 +48,11 @@ public class LibraryActionRequestMessage extends Message {
     @Override
     public void handle(Client client) {
         int currentActionId = Storage.getCurrentActionID();
-        System.out.printf("DEBUG %d %d\n", currentActionId, start);
         if(start > currentActionId) {
             client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, this.messageId, String.format("Requested action #%d, but the latest is #%d", start, currentActionId-1));
             return;
         }
         for(int i = start; i < currentActionId; i++) {
-            System.out.printf("DEEZ BUGS %d\n", i);
             client.send(Storage.actions.get(i).toMessage());
         }
     }

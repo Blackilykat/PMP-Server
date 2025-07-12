@@ -31,6 +31,8 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.io.IOException;
 import java.time.Instant;
 
+import static dev.blackilykat.Main.LOGGER;
+
 public class LoginMessage extends Message {
     public static final String MESSAGE_TYPE = "LOGIN";
 
@@ -147,7 +149,7 @@ public class LoginMessage extends Message {
         try {
             client.send(LibraryHashesMessage.create());
         } catch(IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to send library hashes message", e);
         }
 
         client.loginStage = LoginStage.LOGGED_IN;

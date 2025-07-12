@@ -19,13 +19,8 @@ package dev.blackilykat;
 
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
-import dev.blackilykat.messages.DataHeaderListMessage;
-import dev.blackilykat.messages.LibraryHashesMessage;
-import dev.blackilykat.messages.PlaybackSessionCreateMessage;
-import dev.blackilykat.messages.PlaybackSessionListMessage;
-import dev.blackilykat.messages.PlaybackSessionUpdateMessage;
-import dev.blackilykat.messages.TestMessage;
-import dev.blackilykat.messages.WelcomeMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -59,22 +54,24 @@ import java.util.Arrays;
 import java.util.Date;
 
 public class Main {
+    public static final Logger LOGGER = LogManager.getLogger();
     public static final int PASSWORD_LOG_ROUNDS = 15;
     public static ArrayList<Client> clients = new ArrayList<>();
     public static int clientIdCounter = 0;
 
     public static void main(String[] args) throws IOException {
+        LOGGER.info("Starting...");
         boolean passwordArg = Arrays.asList(args).contains("--password");
 
-        System.out.println("Initializing storage...");
+        LOGGER.info("Initializing storage...");
         Storage.init(!passwordArg);
-        System.out.println("Initialized storage");
+        LOGGER.info("Initialized storage");
 
         if(!Storage.general.containsKey("password") || passwordArg) {
             Console console = System.console();
             if(console == null) {
                 // If you run the program in your IDE's terminal and it exits here, try running it in a real terminal.
-                System.err.println("Need a terminal to read password. Exiting");
+                LOGGER.fatal("Need a terminal to read password. Exiting");
                 System.exit(1);
             }
 
@@ -87,7 +84,7 @@ public class Main {
                         password = console.readPassword();
                         System.out.print("Insert password again: ");
                         if(!Arrays.equals(console.readPassword(), password)) {
-                            System.out.println("Passwords don't match!");
+                            LOGGER.info("Passwords don't match!");
                             continue;
                         }
                         break;
@@ -100,15 +97,15 @@ public class Main {
                 }
             }
             Storage.general.put("password", hashedPassword);
-            System.out.println("Password set");
+            LOGGER.info("Password set");
 
             if(passwordArg) {
-                System.out.println("Found password argument, exiting");
+                LOGGER.info("Found password argument, exiting");
                 System.exit(0);
             }
         }
 
-        System.out.println("Preparing SSL...");
+        LOGGER.info("Preparing SSL...");
         SSLContext sslContext;
         try {
             Security.addProvider(new BouncyCastleProvider());
@@ -147,34 +144,32 @@ public class Main {
         } catch(OperatorCreationException | GeneralSecurityException e) {
             throw new RuntimeException(e);
         }
-        System.out.println("Prepared SSL");
+        LOGGER.info("Prepared SSL");
 
-        System.out.println("Starting file transfer server...");
+        LOGGER.info("Starting file transfer server...");
         HttpsServer fileTransferHttpServer = HttpsServer.create(new InetSocketAddress(5001), 0);
         fileTransferHttpServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
         fileTransferHttpServer.createContext("/", new FileTransferHttpHandler());
         fileTransferHttpServer.start();
-        System.out.println("Started file transfer server");
+        LOGGER.info("Started file transfer server");
 
-        System.out.println("Starting main server");
+        LOGGER.info("Starting main server");
 
         SSLServerSocket serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(5000);
 
         while(true) {
             try {
                 Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
-                System.out.println("Connected to client " + client);
-                System.out.println("All connected clients: " + clients.toString());
+                LOGGER.info("Connected to client " + client);
 
                 client.startSending();
                 client.startReceiving();
             } catch(Exception e) {
-                System.err.println("Failed to connect a client.");
-                e.printStackTrace();
+                LOGGER.warn("Failed to connect a client.", e);
             } catch(Throwable e) {
                 // Errors are designed to not be caught and shut down the program. They should print their stacktraces anyway
                 // but you can never be too safe
-                e.printStackTrace();
+                LOGGER.fatal(e);
                 throw e;
             }
         }

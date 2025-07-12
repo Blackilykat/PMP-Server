@@ -27,15 +27,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static dev.blackilykat.Main.LOGGER;
+
 public class FileTransferHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        LOGGER.info("Handling {} {} request for IP {}", exchange.getRequestMethod(), exchange.getRequestURI(), exchange.getRemoteAddress().getAddress());
         String claimedToken = exchange.getRequestHeaders().get("Authorization").getFirst();
         AtomicBoolean claimedTokenMatches = new AtomicBoolean(false);
         Storage.devices.forEach((i, d) -> {
             if(d.token.equals(claimedToken)) claimedTokenMatches.set(true);
         });
         if(!claimedTokenMatches.get()) {
+            LOGGER.warn("Rejecting request from {} for failing authentication", exchange.getRemoteAddress().getAddress());
             exchange.sendResponseHeaders(403, 0);
             exchange.getResponseBody().close();
             return;
@@ -51,7 +55,7 @@ public class FileTransferHttpHandler implements HttpHandler {
         }
         String method = exchange.getRequestMethod();
         if(query.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
-            System.out.println(method);
+            LOGGER.warn("Empty query with {}", method);
             exchange.sendResponseHeaders(400, 0);
             exchange.getResponseBody().close();
             return;
@@ -83,7 +87,7 @@ public class FileTransferHttpHandler implements HttpHandler {
                         || actionId != LibraryActionMessage.pendingAction.actionId
                         || clientId != LibraryActionMessage.pendingAction.clientId
                         || LibraryActionMessage.pendingAction.isCancelled())) {
-            // not sure if this is the appropriate
+            LOGGER.warn("Rejecting request from {} as it's not performing the pending action", exchange.getRemoteAddress().getAddress());
             exchange.sendResponseHeaders(403, 0);
             exchange.getResponseBody().close();
             return;
@@ -95,6 +99,7 @@ public class FileTransferHttpHandler implements HttpHandler {
                     exchange.getResponseBody().close();
                     return;
                 }
+                LOGGER.info("Accepting GET request for {}", exchange.getRemoteAddress().getAddress());
                 exchange.sendResponseHeaders(200, file.length());
                 OutputStream outputStream = exchange.getResponseBody();
                 Files.copy(file.toPath(), outputStream);
@@ -102,16 +107,19 @@ public class FileTransferHttpHandler implements HttpHandler {
             }
             case "POST" -> {
                 if(LibraryActionMessage.pendingAction.actionType != LibraryAction.Type.ADD) {
+                    LOGGER.warn("Rejecting request from {} as it's using POST for a non-ADD pending action", exchange.getRemoteAddress().getAddress());
                     exchange.sendResponseHeaders(403, 0);
                     exchange.getResponseBody().close();
                     return;
                 }
                 if(file.exists()) {
+                    LOGGER.warn("Rejecting request from {} as it's adding an existing file", exchange.getRemoteAddress().getAddress());
                     LibraryActionMessage.pendingAction.cancelled = true;
                     exchange.sendResponseHeaders(400, 0);
                     exchange.getResponseBody().close();
                     return;
                 }
+                LOGGER.info("Accepting POST request from {}", exchange.getRemoteAddress().getAddress());
                 LibraryActionMessage.pendingAction.started = true;
                 InputStream inputStream = exchange.getRequestBody();
                 Files.copy(inputStream, file.toPath());
@@ -122,10 +130,12 @@ public class FileTransferHttpHandler implements HttpHandler {
             }
             case "PUT" -> {
                 if(LibraryActionMessage.pendingAction.actionType != LibraryAction.Type.REPLACE) {
+                    LOGGER.warn("Rejecting request from {} as it's using PUT for a non-REPLACE pending action", exchange.getRemoteAddress().getAddress());
                     exchange.sendResponseHeaders(403, 0);
                     exchange.getResponseBody().close();
                     return;
                 }
+                LOGGER.info("Accepting PUT request from {}", exchange.getRemoteAddress().getAddress());
                 LibraryActionMessage.pendingAction.started = true;
                 InputStream inputStream = exchange.getRequestBody();
                 Files.copy(inputStream, file.toPath());
@@ -135,6 +145,7 @@ public class FileTransferHttpHandler implements HttpHandler {
                 LibraryActionMessage.pendingAction.finished = true;
             }
             default -> {
+                LOGGER.info("Rejecting with 404 to {}", exchange.getRemoteAddress().getAddress());
                 exchange.sendResponseHeaders(404, 0);
                 exchange.getResponseBody().close();
             }

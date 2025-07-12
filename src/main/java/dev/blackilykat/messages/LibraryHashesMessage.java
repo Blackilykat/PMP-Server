@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 
+import static dev.blackilykat.Main.LOGGER;
+
 /**
  * Sends every song's filename along with its crc32 hash. Used to make sure libraries dont get desynced, which would
  * ideally happen only if someone goes out of their way to manually edit music files not through the application. This
@@ -74,7 +76,7 @@ public class LibraryHashesMessage extends Message {
     public static LibraryHashesMessage create() throws IOException {
         LibraryHashesMessage message = new LibraryHashesMessage();
         assert Storage.LIBRARY.exists() && Storage.LIBRARY.isDirectory();
-        System.out.println("Calculating hashes for dir " + Storage.LIBRARY.getAbsolutePath());
+        LOGGER.info("Calculating hashes for dir {}", Storage.LIBRARY.getAbsolutePath());
         List<Track> tracks = new LinkedList<>();
         int filesCached = 0;
         for (File file : Storage.LIBRARY.listFiles()) {
@@ -83,13 +85,13 @@ public class LibraryHashesMessage extends Message {
             if(Storage.cachedTracks.containsKey(filename) && file.lastModified() == (track = Storage.cachedTracks.get(filename)).lastModified) {
                 filesCached++;
             } else {
-                System.out.println(filename + " not cached!");
+                LOGGER.warn("{} not cached!", filename);
                 track = new Track(file);
             }
             message.add(filename, track.checksum);
             tracks.add(track);
         }
-        System.out.println(filesCached + " tracks cached");
+        LOGGER.info("{} tracks cached", filesCached);
 
         Storage.cachedTracks.clear();
         for(Track track : tracks) {
