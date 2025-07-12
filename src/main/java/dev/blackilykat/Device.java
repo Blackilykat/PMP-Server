@@ -22,6 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
 
+import static dev.blackilykat.Main.LOGGER;
+
 public class Device implements Serializable {
     // all reasonably usable standard ASCII chars
     public static final String TOKEN_CHARSET = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -66,6 +68,7 @@ public class Device implements Serializable {
             e.printStackTrace();
 
             String msg = "There are no SecureRandom algorithms supported by the JVM. This should never happen. Please report this to the developer along with the output of `java -version`.";
+            LOGGER.fatal(msg, e);
             System.out.println(msg);
             System.err.println(msg);
             System.exit(1);

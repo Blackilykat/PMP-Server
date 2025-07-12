@@ -35,6 +35,8 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static dev.blackilykat.Main.LOGGER;
+
 public class Client {
     public final SSLSocket socket;
     public InputStream inputStream;
@@ -80,7 +82,7 @@ public class Client {
     public void disconnect() {
         connected = false;
         Main.clients.remove(this);
-        System.out.println("Disconnecting client " + this);
+        LOGGER.info("Disconnecting client {}", this);
         // may be calling disconnect because the socket got closed
         try {
             socket.close();
@@ -144,14 +146,13 @@ public class Client {
                 while (true) {
                     Message message = messageQueue.take();
                     if(message instanceof ErrorMessage err) {
-                        System.err.printf("""
-                                Sending error to client %d:
-                                  - type            : %s
-                                  - action          : %s
-                                  - relative to     : %d
-                                  - seconds to retry: %d
-                                  - info            : %s
-                                """,
+                        LOGGER.warn("""
+                                Sending error to client {}:
+                                  - type            : {}
+                                  - action          : {}
+                                  - relative to     : {}
+                                  - seconds to retry: {}
+                                  - info            : {}""",
                                 Client.this.clientId,
                                 err.errorType,
                                 err.action,
@@ -169,7 +170,7 @@ public class Client {
                         wel.token = oldToken;
                     }
 
-                    System.out.printf("Sending message to client %d: %s", clientId, printedMessage);
+                    LOGGER.info("Sending message to client {}: {}", clientId, printedMessage.trim());
                     outputStream.write(messageStr.getBytes(StandardCharsets.UTF_8));
                     increaseMessageIdCounter();
                 }
@@ -201,7 +202,7 @@ public class Client {
                         String message = new String(msg, StandardCharsets.UTF_8);
                         // avoid printing password. Doesn't need to be a flawless check as these are debug prints.
                         if(!message.contains("\"LOGIN\"")) {
-                            System.out.printf("Received from client %d: %s\n", clientId, message);
+                            LOGGER.info("Received from client {}: {}", clientId, message);
                         }
                         try {
                             JsonObject json = Json.fromJsonObject(message);
@@ -249,7 +250,7 @@ public class Client {
                             parsedMessage.messageId = messageId;
                             parsedMessage.handle(Client.this);
 
-                            System.out.println("Received message w/ type " + parsedMessage.getMessageType());
+                            LOGGER.info("Received message w/ type {}", parsedMessage.getMessageType());
 
                             increaseMessageIdCounter();
                         } catch (JsonSyntaxException | UnsupportedOperationException e) {

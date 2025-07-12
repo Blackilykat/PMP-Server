@@ -31,6 +31,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dev.blackilykat.Main.LOGGER;
+
 /**
  * Used to notify of changes in the library. For ADD and REPLACE, the server should wait about 10 seconds for a
  * connection to be made to the http server so the clients can upload their files. Clients can expect a successful
@@ -100,7 +102,7 @@ public class LibraryActionMessage extends Message {
 
     @Override
     public void handle(Client client) {
-        System.out.printf("Maybe received action %d: %s\n", actionId, actionType);
+        LOGGER.info("Maybe received action {}: {}", actionId, actionType);
         int currentActionId = Storage.getCurrentActionID();
         if(currentActionId == -1) currentActionId = 0;
         if(actionId != currentActionId) {
@@ -112,7 +114,7 @@ public class LibraryActionMessage extends Message {
             client.send(errorMessage);
             return;
         }
-        System.out.printf("Received action %d: %s\n", actionId, actionType);
+        LOGGER.info("Received action {}: {}", actionId, actionType);
         if(actionType == LibraryAction.Type.ADD || actionType == LibraryAction.Type.REPLACE) {
             if (pendingAction == null || pendingAction.isCancelled() || pendingAction.finished) {
                 pendingAction = new PendingAction(actionId, client.clientId, fileName, actionType);
