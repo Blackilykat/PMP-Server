@@ -178,7 +178,7 @@ public class Client {
                 throw new RuntimeException(e);
             } catch (InterruptedException ignored) {
             } catch (Throwable e) {
-                e.printStackTrace();
+                LOGGER.error("Unknown error", e);
                 throw e;
             } finally {
                 disconnect();
@@ -278,7 +278,7 @@ public class Client {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             } catch (Throwable e) {
-                e.printStackTrace();
+                LOGGER.error("Unknown error", e);
                 throw e;
             } finally {
                 disconnect();
