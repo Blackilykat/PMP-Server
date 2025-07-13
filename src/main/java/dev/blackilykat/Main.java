@@ -19,6 +19,7 @@ package dev.blackilykat;
 
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -40,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
@@ -61,6 +63,10 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         LOGGER.info("Starting...");
+
+        System.setOut(loggingProxy(System.out, Level.INFO));
+        System.setErr(loggingProxy(System.err, Level.ERROR));
+
         boolean passwordArg = Arrays.asList(args).contains("--password");
 
         LOGGER.info("Initializing storage...");
@@ -160,7 +166,7 @@ public class Main {
         while(true) {
             try {
                 Client client = new Client((SSLSocket) serverSocket.accept(), clientIdCounter++);
-                LOGGER.info("Connected to client " + client);
+                LOGGER.info("Connected to client {}", client);
 
                 client.startSending();
                 client.startReceiving();
@@ -173,5 +179,116 @@ public class Main {
                 throw e;
             }
         }
+    }
+
+    public static PrintStream loggingProxy(PrintStream stream, Level level) {
+        String tPrefix = "(stream)";
+        if(stream == System.out) tPrefix = "(stdout)";
+        else if(stream == System.err) tPrefix = "(stderr)";
+
+        final String prefix = tPrefix;
+
+        return new PrintStream(stream) {
+            @Override
+            public void println() {
+            }
+
+            @Override
+            public void println(int x) {
+                print(x);
+            }
+
+            @Override
+            public void println(char x) {
+                print(x);
+            }
+
+            @Override
+            public void println(long x) {
+                print(x);
+            }
+
+            @Override
+            public void println(float x) {
+                print(x);
+            }
+
+            @Override
+            public void println(char[] x) {
+                print(x);
+            }
+
+            @Override
+            public void println(double x) {
+                print(x);
+            }
+
+            @Override
+            public void println(Object x) {
+                print(x);
+            }
+
+            @Override
+            public void println(String x) {
+                print(x);
+            }
+
+            @Override
+            public void println(boolean x) {
+                print(x);
+            }
+
+            @Override
+            public void print(String s) {
+                LOGGER.log(level, "{} {}", prefix, s);
+            }
+
+            @Override
+            public void print(Object obj) {
+                if(obj instanceof Exception ex) {
+                    LOGGER.log(level, "{} exception", prefix, ex);
+                    return;
+                } else if(obj instanceof String str){
+                    if(str.startsWith("\tat ")) return;
+                }
+
+                LOGGER.log(level, "{} {}", prefix, obj);
+            }
+
+            @Override
+            public void print(int i) {
+                LOGGER.log(level, "{} {}", prefix, i);
+            }
+
+            @Override
+            public void print(char c) {
+                LOGGER.log(level, "{} {}", prefix, c);
+            }
+
+            @Override
+            public void print(long l) {
+                LOGGER.log(level, "{} {}", prefix, l);
+            }
+
+            @Override
+            public void print(boolean b) {
+                LOGGER.log(level, "{} {}", prefix, b);
+            }
+
+            @Override
+            public void print(float f) {
+                LOGGER.log(level, "{} {}", prefix, f);
+            }
+
+            @Override
+            public void print(double d) {
+                LOGGER.log(level, "{} {}", prefix, d);
+            }
+
+            @Override
+            public void print(char[] s) {
+                LOGGER.log(level, "{} {}", prefix, s);
+            }
+        };
     }
 }
