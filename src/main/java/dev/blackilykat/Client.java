@@ -140,6 +140,11 @@ public class Client {
     }
 
     private class MessageSendingThread extends Thread {
+
+        public MessageSendingThread() {
+            super("Message sending thread for client " + clientId);
+        }
+
         @Override
         public void run() {
             try {
@@ -175,11 +180,11 @@ public class Client {
                     increaseMessageIdCounter();
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException ignored) {
-            } catch (Throwable e) {
-                LOGGER.error("Unknown error", e);
-                throw e;
+                LOGGER.error("IO exception", e);
+            } catch (InterruptedException e) {
+                LOGGER.warn("Interrupted", e);
+            } catch (Exception e) {
+                LOGGER.error("Unknown exception", e);
             } finally {
                 disconnect();
             }
@@ -187,6 +192,11 @@ public class Client {
     }
 
     private class MessageReceivingThread extends Thread {
+
+        public MessageReceivingThread() {
+            super("Message receiving thread for client " + clientId);
+        }
+
         @Override
         public void run() {
             Queue<Byte> inputBuffer = new ArrayDeque<>();
@@ -276,10 +286,9 @@ public class Client {
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (Throwable e) {
-                LOGGER.error("Unknown error", e);
-                throw e;
+                LOGGER.error("IO exception", e);
+            } catch (Exception e) {
+                LOGGER.error("Unknown exception", e);
             } finally {
                 disconnect();
             }
