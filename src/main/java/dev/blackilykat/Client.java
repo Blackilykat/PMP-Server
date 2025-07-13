@@ -45,8 +45,8 @@ public class Client {
     public LoginStage loginStage = LoginStage.LOGGED_OUT;
     public final Object loginLock = new Object();
     public BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
-    private MessageSendingThread messageSendingThread = new MessageSendingThread();
-    private MessageReceivingThread messageReceivingThread = new MessageReceivingThread();
+    private MessageSendingThread messageSendingThread;
+    private MessageReceivingThread messageReceivingThread;
     private int messageIdCounter = 0;
     public final int clientId;
     public Device device;
@@ -54,14 +54,13 @@ public class Client {
     public Client(SSLSocket socket, int clientId) throws IOException {
         this.clientId = clientId;
         this.socket = socket;
+
+        messageSendingThread = new MessageSendingThread();
+        messageReceivingThread = new MessageReceivingThread();
+
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
         socket.startHandshake();
-    }
-
-    public void start() {
-        messageSendingThread.start();
-        messageReceivingThread.start();
     }
 
     public void startSending() {
@@ -87,6 +86,14 @@ public class Client {
         try {
             socket.close();
         } catch (IOException ignored) {}
+
+        try {
+            messageSendingThread.interrupt();
+            messageReceivingThread.interrupt();
+        } catch(SecurityException e) {
+            // should really never happen
+            LOGGER.error("Failed to interrupt IO threads", e);
+        }
 
         for(PlaybackSession session : PlaybackSession.getAvailableSessions()) {
             if(session.owner == this.clientId) {
