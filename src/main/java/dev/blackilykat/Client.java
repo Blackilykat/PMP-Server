@@ -32,12 +32,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static dev.blackilykat.Main.LOGGER;
 
 public class Client {
+    public static final Timer timer = new Timer("Client timer");
     public final SSLSocket socket;
     public InputStream inputStream;
     public OutputStream outputStream;
@@ -50,6 +53,8 @@ public class Client {
     private int messageIdCounter = 0;
     public final int clientId;
     public Device device;
+    public TimerTask keepaliveKillTask;
+    public TimerTask keepaliveSendTask;
 
     public Client(SSLSocket socket, int clientId) throws IOException {
         this.clientId = clientId;
@@ -61,6 +66,16 @@ public class Client {
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
         socket.startHandshake();
+
+        keepaliveKillTask = KeepAliveMessage.makeKillTask(this);
+        timer.schedule(keepaliveKillTask, KeepAliveMessage.KEEPALIVE_MAX_MS);
+        keepaliveSendTask = new TimerTask() {
+            @Override
+            public void run() {
+                Client.this.send(new KeepAliveMessage());
+            }
+        };
+        timer.schedule(keepaliveSendTask, KeepAliveMessage.KEEPALIVE_MS, KeepAliveMessage.KEEPALIVE_MS);
     }
 
     public void startSending() {
@@ -82,6 +97,10 @@ public class Client {
         connected = false;
         Main.clients.remove(this);
         LOGGER.info("Disconnecting client {}", this);
+
+        if(keepaliveSendTask != null) keepaliveSendTask.cancel();
+        if(keepaliveKillTask != null) keepaliveKillTask.cancel();
+
         // may be calling disconnect because the socket got closed
         try {
             socket.close();
@@ -263,6 +282,7 @@ public class Client {
                                 case DataHeaderListMessage.MESSAGE_TYPE -> DataHeaderListMessage.fromJson(json);
                                 case LoginMessage.MESSAGE_TYPE -> LoginMessage.fromJson(json);
                                 case LatestHeaderIdMessage.MESSAGE_TYPE -> LatestHeaderIdMessage.fromJson(json);
+                                case KeepAliveMessage.MESSAGE_TYPE -> KeepAliveMessage.fromJson(json);
                                 default -> {
                                     throw new MessageInvalidContentsException("Unknown message_type '"+messageType+"'");
                                 }
