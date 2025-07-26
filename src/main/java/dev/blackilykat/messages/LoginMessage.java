@@ -116,7 +116,10 @@ public class LoginMessage extends Message {
                 }
             }
         } else if(deviceId != -1 && token != null) {
-            device = Storage.devices.get(deviceId);
+            if((device = Storage.devices.get(deviceId)) == null) {
+                client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "No device with that id");
+                return;
+            }
             if(!device.token.equals(token)) {
                 client.loginStage = LoginStage.LOGGED_OUT;
                 synchronized(client.loginLock) {
