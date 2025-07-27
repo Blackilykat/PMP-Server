@@ -23,7 +23,7 @@ import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 
 /**
- * Used to communicate that an unexpected error of any kind has occurred.
+ * Used to communicate that an expected or unexpected error of any kind has occurred.
  */
 public class ErrorMessage extends Message {
     public static final String MESSAGE_TYPE = "ERROR";
@@ -34,29 +34,21 @@ public class ErrorMessage extends Message {
     public String info = "";
 
     /**
-     * How long the client should wait before retrying something.
-     * <br />If negative, it is not included in the message sent to the client.
-     * @see Action#RETRY
-     * @see Action#RECONNECT
-     */
-    public int secondsToRetry = -1;
-
-    /**
      * If the error was triggered by a message, the {@link Message#messageId} of said message.
      * <br />If negative, it is not included in the message sent to the client.
      */
     public int relativeToMessage = -1;
 
     public final ErrorType errorType;
-    public final Action action;
+    public ErrorID errorID = null;
 
     public ErrorMessage(ErrorType errorType) {
         this.errorType = errorType;
-        this.action = Action.UNKNOWN;
     }
-    public ErrorMessage(ErrorType errorType, Action action) {
-        this.errorType = errorType;
-        this.action = action;
+
+    public ErrorMessage(ErrorID errorID) {
+        this.errorID = errorID;
+        this.errorType = errorID.type;
     }
 
     @Override
@@ -67,10 +59,9 @@ public class ErrorMessage extends Message {
     @Override
     public void fillContents(JsonObject object) {
         if(info != null && !info.isEmpty()) object.addProperty("info",  info);
-        if(secondsToRetry >= 0) object.addProperty("seconds_to_retry", secondsToRetry);
         if(relativeToMessage >= 0) object.addProperty("relative_to_message", relativeToMessage);
         object.addProperty("error_type", errorType.toString());
-        object.addProperty("action", action.toString());
+        if(errorID != null) object.addProperty("error_id", errorID.toString());
     }
 
     @Override
@@ -79,7 +70,7 @@ public class ErrorMessage extends Message {
 
     //@Override
     public static Message fromJson(JsonObject json) throws MessageException {
-        throw new MessageInvalidContentsException();
+        throw new MessageInvalidContentsException("Clients cannot send error messages");
     }
 
     /**
@@ -105,32 +96,58 @@ public class ErrorMessage extends Message {
         MESSAGE_MISSING_CONTENTS,
         /**
          * The client tried to something that cannot be done at the moment (for example, adding a file to the library
-         * while another client is already doing that). Ideally paired with {@link Action#RETRY} and
-         * {@link #secondsToRetry}
+         * while another client is already doing that).
          */
         BUSY
     }
 
     /**
-     * How the client should behave after receiving this message.
+     * The specific case of where the error has occurred. This can be used by the client to determine an eventual
+     * recovery from the error (e.g. prompt for password again, reconnect, wait before retrying...)
+     * For retro-compatibility, avoid renaming these if not in major version changes.
      */
-    public enum Action {
+    public enum ErrorID {
         /**
-         * The client can decide how to react (may be a popup, automatic report, ignoring...)
+         * A message the client sent had contents which prove that the client is in an invalid state.
+         * The client should respond by somehow attempting to fix the invalid state (which in most cases would probably mean reconnecting).
          */
-        UNKNOWN,
+        INVALID_CLIENT_STATE(ErrorType.MESSAGE_INVALID_CONTENTS),
+
         /**
-         * The client should retry doing what it was trying to do in {@link #secondsToRetry} seconds. This should only
-         * be sent if the error was triggered by a message sent by the client.
+         * The client tried to send a message but hasn't logged in yet.
          */
-        RETRY,
+        LOGGED_OUT(ErrorType.MESSAGE_INVALID_CONTENTS),
+
         /**
-         * The client should disconnect from the server without automatically reconnecting
+         * The client tried to perform a library action while another was already performing one.
+         * This shouldn't be a problem in of itself but to avoid edge cases and race conditions this is currently unsupported.
+         * The client can retry later if this happens.
          */
-        DISCONNECT,
+        LIBRARY_BUSY(ErrorType.BUSY),
+
         /**
-         * The client should disconnect and try to reconnect at intervals of {@link #secondsToRetry} seconds
+         * The client tried to log in using a password, but it was incorrect.
+         * The user should be asked the password again.
          */
-        RECONNECT
+        LOGIN_INVALID_PASSWORD(ErrorType.MESSAGE_INVALID_CONTENTS),
+
+        /**
+         * The client tried to log in using a token, but it was incorrect.
+         * The user should be asked the password.
+         * Optionally, a different message warning about potential unauthorized access may be included.
+         */
+        LOGIN_INVALID_TOKEN(ErrorType.MESSAGE_INVALID_CONTENTS),
+
+        /**
+         * The client tried to log in with a device ID which does not exist.
+         * It should try logging back in sending its hostname instead, and let go of its previous device id.
+         */
+        LOGIN_DEVICE_DOES_NOT_EXIST(ErrorType.MESSAGE_INVALID_CONTENTS);
+
+        public final ErrorType type;
+
+        ErrorID(ErrorType type) {
+            this.type = type;
+        }
     }
 }

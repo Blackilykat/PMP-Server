@@ -83,7 +83,8 @@ public class LoginMessage extends Message {
     @Override
     public void handle(Client client) {
         if(client.loginStage != LoginStage.LOGGED_OUT) {
-            client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, this.messageId, "Can't log in while not logged out");
+            LOGGER.error("A client tried to log in while not logged out!");
+            client.sendError(ErrorMessage.ErrorID.INVALID_CLIENT_STATE, this.messageId);
             return;
         }
 
@@ -102,7 +103,7 @@ public class LoginMessage extends Message {
                 synchronized(client.loginLock) {
                     client.loginLock.notifyAll();
                 }
-                client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Invalid password");
+                client.sendError(ErrorMessage.ErrorID.LOGIN_INVALID_PASSWORD, messageId);
                 return;
             }
 
@@ -111,13 +112,14 @@ public class LoginMessage extends Message {
                 Storage.devices.put(device.id, device);
             } else {
                 if((device = Storage.devices.get(deviceId)) == null) {
-                    client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "No device with that id");
+
+                    client.sendError(ErrorMessage.ErrorID.LOGIN_DEVICE_DOES_NOT_EXIST, messageId);
                     return;
                 }
             }
         } else if(deviceId != -1 && token != null) {
             if((device = Storage.devices.get(deviceId)) == null) {
-                client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "No device with that id");
+                client.sendError(ErrorMessage.ErrorID.LOGIN_DEVICE_DOES_NOT_EXIST, messageId);
                 return;
             }
             if(!device.token.equals(token)) {
@@ -125,7 +127,7 @@ public class LoginMessage extends Message {
                 synchronized(client.loginLock) {
                     client.loginLock.notifyAll();
                 }
-                client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Invalid token");
+                client.sendError(ErrorMessage.ErrorID.LOGIN_INVALID_TOKEN, messageId);
                 return;
             }
         } else {

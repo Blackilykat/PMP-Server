@@ -129,10 +129,27 @@ public class Client {
         messageQueue.add(message);
     }
 
+    /**
+     * Send a generic error that may only be reached due to a bug in the client's code, or anyway an error which is
+     * impossible to gracefully recover from. If an error can be recovered from (even if it requires a reconnect), use
+     * {@link #sendError(ErrorMessage.ErrorID, int)} instead
+     */
     public void sendError(ErrorMessage.ErrorType type, int messageId, String info) {
         ErrorMessage errorMessage = new ErrorMessage(type);
         if(info != null) errorMessage.info = info;
         if(messageId >= 0) errorMessage.relativeToMessage = messageId;
+        send(errorMessage);
+    }
+
+    /**
+     * Send an error that may be reached during the normal execution of the program and can be recovered from in any way.<br />
+     * How the error is handled is up to the client.<br />
+     * In most cases IDs are unique and don't need a human-readable description to indicate where the problem happened.<br />
+     * When an ID is not unique (such as INVALID_CLIENT_STATE), the server can print a log to pinpoint what the problem was.
+     */
+    public void sendError(ErrorMessage.ErrorID errorID, int messageId) {
+        ErrorMessage errorMessage = new ErrorMessage(errorID);
+        if(messageId >= 0) errorMessage.messageId = messageId;
         send(errorMessage);
     }
 
@@ -180,15 +197,13 @@ public class Client {
                         LOGGER.warn("""
                                 Sending error to client {}:
                                   - type            : {}
-                                  - action          : {}
+                                  - id              : {}
                                   - relative to     : {}
-                                  - seconds to retry: {}
                                   - info            : {}""",
                                 Client.this.clientId,
                                 err.errorType,
-                                err.action,
+                                err.errorID,
                                 err.relativeToMessage,
-                                err.secondsToRetry,
                                 err.info);
                     }
                     String messageStr = (message.withMessageId(getMessageIdCounter()).toJson() + "\n");
@@ -259,7 +274,7 @@ public class Client {
                             }
                             if(loginStage == LoginStage.LOGGED_OUT && !messageType.equals(LoginMessage.MESSAGE_TYPE)) {
                                 increaseMessageIdCounter();
-                                sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, getMessageIdCounter()-1, "Logged out");
+                                sendError(ErrorMessage.ErrorID.LOGGED_OUT, getMessageIdCounter()-1);
                                 continue;
                             }
 

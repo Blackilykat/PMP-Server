@@ -20,6 +20,7 @@ package dev.blackilykat.messages;
 import com.google.gson.JsonObject;
 import dev.blackilykat.Client;
 import dev.blackilykat.messages.exceptions.MessageException;
+import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 import dev.blackilykat.messages.exceptions.MessageMissingContentsException;
 
 /**
@@ -74,28 +75,11 @@ public class WelcomeMessage extends Message {
 
     @Override
     public void handle(Client client) {
-        client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Clients cannot send welcome messages!");
     }
 
     //@Override
     public static Message fromJson(JsonObject json) throws MessageException {
-        if(!json.has("client_id")) {
-            throw new MessageMissingContentsException("Missing client id");
-        }
-        if(!json.has("latest_action_id")) {
-            throw new MessageMissingContentsException("Missing latest action id");
-        }
-        if(!json.has("token")) {
-            throw new MessageMissingContentsException("Missing token");
-        }
-        if(!json.has("device_id")) {
-            throw new MessageMissingContentsException("Missing device id");
-        }
-        return new WelcomeMessage(
-                json.get("client_id").getAsInt(),
-                json.get("latest_action_id").getAsInt(),
-                json.get("token").getAsString(),
-                json.get("device_id").getAsInt()
-        );
+        throw new MessageInvalidContentsException("Clients cannot send welcome messages");
+
     }
 }

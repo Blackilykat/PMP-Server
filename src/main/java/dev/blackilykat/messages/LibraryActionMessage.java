@@ -106,12 +106,8 @@ public class LibraryActionMessage extends Message {
         int currentActionId = Storage.getCurrentActionID();
         if(currentActionId == -1) currentActionId = 0;
         if(actionId != currentActionId) {
-            // reconnect to sync the ids back up
-            ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, ErrorMessage.Action.RECONNECT);
-            errorMessage.relativeToMessage = messageId;
-            errorMessage.info = "Unexpected action ID! received: " + actionId + ", expected: " + currentActionId;
-            errorMessage.secondsToRetry = 0;
-            client.send(errorMessage);
+            LOGGER.error("Expected action ID {}, but got {}", currentActionId, actionId);
+            client.sendError(ErrorMessage.ErrorID.INVALID_CLIENT_STATE, messageId);
             return;
         }
         LOGGER.info("Received action {}: {}", actionId, actionType);
@@ -119,37 +115,15 @@ public class LibraryActionMessage extends Message {
             if (pendingAction == null || pendingAction.isCancelled() || pendingAction.finished) {
                 pendingAction = new PendingAction(actionId, client.clientId, fileName, actionType);
             } else {
-                ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.BUSY, ErrorMessage.Action.RETRY);
-                errorMessage.relativeToMessage = messageId;
-                errorMessage.info = "Another client is trying to modify the library right now.";
-                /*
-                retry after timeout to see if other client fails to establish a connection, if it has already established
-                a connection then wait until you get another action message which indicates the other client is done. It
-                does return 60 seconds which is arbitrarily selected as an ETA for when the other client would probably
-                be done sending its file, just in case it breaks the connection so that this client isn't left waiting
-                eternally
-                 */
-                if (!pendingAction.started) {
-                    errorMessage.secondsToRetry = (int) (PendingAction.CONNECTION_TIMEOUT_SECONDS + 1);
-                } else {
-                    errorMessage.secondsToRetry = 60;
-                }
-                client.send(errorMessage);
+                client.sendError(ErrorMessage.ErrorID.LIBRARY_BUSY, messageId);
             }
         } else if(actionType == LibraryAction.Type.CHANGE_METADATA) {
-            //TODO before beta
-            ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS);
-            errorMessage.relativeToMessage = messageId;
-            errorMessage.info = "The server does not support changing metadata yet! :(";
-            client.send(errorMessage);
+            client.sendError(ErrorMessage.ErrorType.SERVER, messageId, "The server does not support changing metadata yet! :(");
             return;
         } else if(actionType == LibraryAction.Type.REMOVE) {
             File toRemove = new File(Storage.LIBRARY, fileName);
             if(!toRemove.delete()) {
-                ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS);
-                errorMessage.relativeToMessage = messageId;
-                errorMessage.info = "Track " + fileName + " does not exist!";
-                client.send(errorMessage);
+                client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, messageId, "Track " + fileName + " does not exist");
                 return;
             }
             Client.broadcastExcept(this, client.clientId);

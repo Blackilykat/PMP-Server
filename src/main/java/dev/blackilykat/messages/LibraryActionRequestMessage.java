@@ -23,6 +23,8 @@ import dev.blackilykat.Storage;
 import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 
+import static dev.blackilykat.Main.LOGGER;
+
 /**
  * Used when a client needs to receive missing actions from the server.
  * Clients can expect the server to send all library actions from (inclusive) {@link #start} up to the latest one.
@@ -49,7 +51,8 @@ public class LibraryActionRequestMessage extends Message {
     public void handle(Client client) {
         int currentActionId = Storage.getCurrentActionID();
         if(start > currentActionId) {
-            client.sendError(ErrorMessage.ErrorType.MESSAGE_INVALID_CONTENTS, this.messageId, String.format("Requested action #%d, but the latest is #%d", start, currentActionId-1));
+            LOGGER.error("A client requested action #{}, but the latest is #{}", start, currentActionId-1);
+            client.sendError(ErrorMessage.ErrorID.INVALID_CLIENT_STATE, this.messageId);
             return;
         }
         for(int i = start; i < currentActionId; i++) {
