@@ -44,7 +44,7 @@ public class Client {
     public final SSLSocket socket;
     public InputStream inputStream;
     public OutputStream outputStream;
-    public boolean connected = true;
+    public boolean connected = false;
     public LoginStage loginStage = LoginStage.LOGGED_OUT;
     public final Object loginLock = new Object();
     public BlockingQueue<Message> messageQueue = new LinkedBlockingQueue<>();
@@ -65,6 +65,7 @@ public class Client {
 
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
+        outputStream.write(new byte[]{'P', 'M', 'P', '\n'});
         socket.startHandshake();
 
         keepaliveKillTask = KeepAliveMessage.makeKillTask(this);
@@ -254,6 +255,19 @@ public class Client {
                             msg[i] = inputBuffer.poll();
                         }
                         String message = new String(msg, StandardCharsets.UTF_8);
+
+                        if(message.equals("PMP")) {
+                            LOGGER.info("Received PMP signature from client {}", clientId);
+                            connected = true;
+                            continue;
+                        }
+
+                        if(!connected) {
+                            LOGGER.warn("Client {} didn't send PMP signature. Disconnecting", clientId);
+                            disconnect();
+                            break;
+                        }
+
                         // avoid printing password. Doesn't need to be a flawless check as these are debug prints.
                         if(!message.contains("\"LOGIN\"")) {
                             LOGGER.info("Received from client {}: {}", clientId, message);
