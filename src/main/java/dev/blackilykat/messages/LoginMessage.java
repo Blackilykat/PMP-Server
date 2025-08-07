@@ -122,7 +122,7 @@ public class LoginMessage extends Message {
                 client.sendError(ErrorMessage.ErrorID.LOGIN_DEVICE_DOES_NOT_EXIST, messageId);
                 return;
             }
-            if(!device.token.equals(token)) {
+            if(device.token == null || !device.token.equals(token)) {
                 client.loginStage = LoginStage.LOGGED_OUT;
                 synchronized(client.loginLock) {
                     client.loginLock.notifyAll();

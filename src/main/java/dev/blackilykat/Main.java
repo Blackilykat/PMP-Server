@@ -106,6 +106,10 @@ public class Main {
             LOGGER.info("Password set");
 
             if(passwordArg) {
+                Storage.devices.forEach((integer, device) -> {
+                    device.token = null;
+                });
+                LOGGER.info("All tokens have been invalidated. You will need to insert the new password on each device.");
                 LOGGER.info("Found password argument, exiting");
                 System.exit(0);
             }
