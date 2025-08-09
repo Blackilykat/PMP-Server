@@ -161,6 +161,8 @@ public class LoginMessage extends Message {
         synchronized(client.loginLock) {
             client.loginLock.notifyAll();
         }
+
+        Storage.mvStore.commit();
     }
 
     //@Override

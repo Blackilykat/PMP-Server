@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static dev.blackilykat.Main.LOGGER;
+
 @SuppressWarnings("unchecked")
 public class Storage {
     public static final File LIBRARY = new File("library/");
@@ -33,6 +35,7 @@ public class Storage {
     public static Map<Integer, Device> devices;
     public static Map<String, Object> general;
     public static Map<String, Track> cachedTracks;
+    public static MVStore mvStore;
 
     public static void init(final boolean saveOnShutdown) {
         if(!LIBRARY.exists()) {
@@ -42,7 +45,7 @@ public class Storage {
         }
 
 
-        MVStore mvStore = MVStore.open("db");
+        mvStore = MVStore.open("db");
         actions = mvStore.openMap("actions");
         devices = mvStore.openMap("devices");
         general = mvStore.openMap("general");
