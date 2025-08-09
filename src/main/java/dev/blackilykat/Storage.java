@@ -18,6 +18,7 @@
 package dev.blackilykat;
 
 import org.h2.mvstore.MVStore;
+import org.h2.mvstore.MVStoreException;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,17 +26,47 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static dev.blackilykat.Main.LOGGER;
 
 @SuppressWarnings("unchecked")
 public class Storage {
+    public static final Object reopeningStoreLock = new Object();
+
+
     public static final File LIBRARY = new File("library/");
     public static Map<Integer, LibraryAction> actions;
     public static Map<Integer, Device> devices;
     public static Map<String, Object> general;
     public static Map<String, Track> cachedTracks;
     public static MVStore mvStore;
+
+    private static void openStore() {
+        mvStore = MVStore.open("db");
+        actions = mvStore.openMap("actions");
+        devices = mvStore.openMap("devices");
+        general = mvStore.openMap("general");
+        cachedTracks = mvStore.openMap("cachedTracks");
+        PlaybackSession.idCounter = getSessionIDCounter();
+        PlaybackSession.availableSessions = getSessionList();
+    }
+
+    /**
+     * Thread-safe method to reopen the MVStore if it is closed.
+     * @return whether the store was reopened or not
+     */
+    public static boolean maybeReopenStore() {
+        synchronized(reopeningStoreLock) {
+            if(mvStore.isClosed()) {
+                openStore();
+                LOGGER.info("Reopened store");
+                return true;
+            }
+            LOGGER.info("Store was already open");
+            return false;
+        }
+    }
 
     public static void init(final boolean saveOnShutdown) {
         if(!LIBRARY.exists()) {
@@ -44,12 +75,7 @@ public class Storage {
             throw new RuntimeException("library is a file! It must be renamed or deleted for the program to function.");
         }
 
-
-        mvStore = MVStore.open("db");
-        actions = mvStore.openMap("actions");
-        devices = mvStore.openMap("devices");
-        general = mvStore.openMap("general");
-        cachedTracks = mvStore.openMap("cachedTracks");
+        openStore();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (saveOnShutdown) {
@@ -59,8 +85,6 @@ public class Storage {
             mvStore.close();
         }));
 
-        PlaybackSession.idCounter = getSessionIDCounter();
-        PlaybackSession.availableSessions = getSessionList();
     }
 
     public static int getCurrentActionID() {

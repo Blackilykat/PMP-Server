@@ -23,11 +23,13 @@ import dev.blackilykat.messages.*;
 import dev.blackilykat.messages.exceptions.MessageException;
 import dev.blackilykat.messages.exceptions.MessageInvalidContentsException;
 import dev.blackilykat.messages.exceptions.MessageMissingContentsException;
+import org.h2.mvstore.MVStoreException;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -317,7 +319,21 @@ public class Client {
                                 }
                             };
                             parsedMessage.messageId = messageId;
-                            parsedMessage.handle(Client.this);
+
+                            if(Storage.mvStore.isClosed()) {
+                                LOGGER.warn("Storage is closed!");
+                                Storage.maybeReopenStore();
+                            }
+
+                            try {
+                                parsedMessage.handle(Client.this);
+                            } catch(MVStoreException e) {
+                                LOGGER.warn("Storage was closed while handling a message");
+                                Storage.maybeReopenStore();
+                                if(e.getCause() != null && e.getCause() instanceof ClosedByInterruptException) {
+                                    Thread.currentThread().interrupt();
+                                }
+                            }
 
                             LOGGER.info("Received message w/ type {}", parsedMessage.getMessageType());
 
