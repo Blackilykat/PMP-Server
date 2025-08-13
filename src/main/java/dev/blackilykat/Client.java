@@ -314,6 +314,7 @@ public class Client {
                                 case LoginMessage.MESSAGE_TYPE -> LoginMessage.fromJson(json);
                                 case LatestHeaderIdMessage.MESSAGE_TYPE -> LatestHeaderIdMessage.fromJson(json);
                                 case KeepAliveMessage.MESSAGE_TYPE -> KeepAliveMessage.fromJson(json);
+                                case PlaybackSessionDeleteMessage.MESSAGE_TYPE -> PlaybackSessionDeleteMessage.fromJson(json);
                                 default -> {
                                     throw new MessageInvalidContentsException("Unknown message_type '"+messageType+"'");
                                 }

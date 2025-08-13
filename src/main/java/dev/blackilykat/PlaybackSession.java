@@ -45,6 +45,10 @@ public class PlaybackSession implements Serializable {
         availableSessions.add(this);
     }
 
+    public void unregister() {
+        availableSessions.remove(this);
+    }
+
     public static PlaybackSession[] getAvailableSessions() {
         if(availableSessions == null) return new PlaybackSession[0];
         return availableSessions.toArray(new PlaybackSession[0]);
