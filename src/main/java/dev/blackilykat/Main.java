@@ -53,12 +53,14 @@ import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 public class Main {
     public static final Logger LOGGER = LogManager.getLogger(Main.class);
     public static final int PASSWORD_LOG_ROUNDS = 15;
-    public static ArrayList<Client> clients = new ArrayList<>();
+    public static List<Client> clients = Collections.synchronizedList(new ArrayList<>());
     public static int clientIdCounter = 0;
 
     public static void main(String[] args) throws IOException {
