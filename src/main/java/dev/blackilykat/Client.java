@@ -270,6 +270,8 @@ public class Client {
                             break;
                         }
 
+                        if(message.isBlank()) continue;
+
                         // avoid printing password. Doesn't need to be a flawless check as these are debug prints.
                         if(!message.contains("\"LOGIN\"")) {
                             LOGGER.info("Received from client {}: {}", clientId, message);
