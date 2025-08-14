@@ -321,7 +321,7 @@ public class Client {
                             };
                             parsedMessage.messageId = messageId;
 
-                            if(Storage.mvStore.isClosed()) {
+                            if(Storage.isStoreClosed()) {
                                 LOGGER.warn("Storage is closed!");
                                 Storage.maybeReopenStore();
                             }
@@ -358,6 +358,7 @@ public class Client {
                         }
                     }
                 }
+                LOGGER.warn("Input thread interrupted");
             } catch (IOException e) {
                 LOGGER.error("IO exception", e);
             } catch (Exception e) {

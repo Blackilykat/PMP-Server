@@ -40,6 +40,7 @@ public class Storage {
     public static Map<Integer, Device> devices;
     public static Map<String, Object> general;
     public static Map<String, Track> cachedTracks;
+    private static Map<Boolean, Boolean> openChecker;
     public static MVStore mvStore;
 
     private static void openStore() {
@@ -47,9 +48,25 @@ public class Storage {
         actions = mvStore.openMap("actions");
         devices = mvStore.openMap("devices");
         general = mvStore.openMap("general");
+        openChecker = mvStore.openMap("openChecker");
         cachedTracks = mvStore.openMap("cachedTracks");
         PlaybackSession.idCounter = getSessionIDCounter();
         PlaybackSession.availableSessions = getSessionList();
+    }
+
+    /**
+     * Performs a read and a write operation to the store to check whether it's been unexpectedly closed.<br/>
+     * Calling {@link MVStore#isClosed()} returns an incorrect value if the underlying file was closed by an interrupt.
+     */
+    public static boolean isStoreClosed() {
+        synchronized(reopeningStoreLock) {
+            try {
+                openChecker.put(false, !openChecker.getOrDefault(false, false));
+                return false;
+            } catch(MVStoreException e) {
+                return true;
+            }
+        }
     }
 
     /**
@@ -58,7 +75,7 @@ public class Storage {
      */
     public static boolean maybeReopenStore() {
         synchronized(reopeningStoreLock) {
-            if(mvStore.isClosed()) {
+            if(isStoreClosed()) {
                 openStore();
                 LOGGER.info("Reopened store");
                 return true;
