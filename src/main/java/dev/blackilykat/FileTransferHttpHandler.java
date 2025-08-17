@@ -25,6 +25,7 @@ import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static dev.blackilykat.Main.LOGGER;
@@ -33,7 +34,16 @@ public class FileTransferHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         LOGGER.info("Handling {} {} request for IP {}", exchange.getRequestMethod(), exchange.getRequestURI(), exchange.getRemoteAddress().getAddress());
-        String claimedToken = exchange.getRequestHeaders().get("Authorization").getFirst();
+
+        List<String> claimedTokenList = exchange.getRequestHeaders().get("Authorization");
+        if(claimedTokenList == null) {
+            LOGGER.warn("Rejecting request from {} for not attempting authentication", exchange.getRemoteAddress().getAddress());
+            exchange.sendResponseHeaders(403, 0);
+            exchange.getResponseBody().close();
+            return;
+        }
+
+        String claimedToken = claimedTokenList.getFirst();
         AtomicBoolean claimedTokenMatches = new AtomicBoolean(false);
         Storage.devices.forEach((i, d) -> {
             if(d.token.equals(claimedToken)) claimedTokenMatches.set(true);
